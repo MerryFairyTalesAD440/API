@@ -16,7 +16,6 @@ namespace DemoFunctionsMikal
         /// asynch task
         /// function takes a name query parameter or request body
         /// and responds with json message base on which parameter was passed.
-        /// displays a message
         /// </summary>
         /// <param name="req">Http request</param>
         /// <param name="log">Log function information</param>
