@@ -6,7 +6,8 @@ info:
   license:
     name: Apache 2.0 - Swagger UI
     url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
-basePath: /merryfairytalesURL
+host: "api.merryfairytales.io"    
+basePath: "/v1"
 tags:
 - name: upload
   description: API to upload books.
@@ -25,7 +26,7 @@ tags:
   externalDocs:
     url: "http://ourdocumentation.com"
 paths:
-  /api/v1/books:
+  /books:
     post:
       tags:
           - "upload"
@@ -107,7 +108,7 @@ paths:
           description: "Unauthorized access."
         500:
           description: "A system error occurred."    
-  /api/v1/books/{bookId}:
+  /books/{bookId}:
     get:
       tags:
       - "download"
@@ -227,7 +228,7 @@ paths:
           description: "Book ID not found."
         500:
           description: "A system error occurred."
-  /api/v1/books/{bookId}/pages:
+  /books/{bookId}/pages:
     post:
       tags:
           - "upload"
@@ -361,7 +362,7 @@ paths:
           description: "Book ID not found."
         500:
           description: "A system error occurred."      
-  /api/v1/books/{bookId}/pages/{pageNumber}:
+  /books/{bookId}/pages/{pageNumber}:
     get:
       tags:
           - "download"
@@ -503,7 +504,7 @@ paths:
           description: "Page not found."
         500:
           description: "A system error occurred."
-  /api/v1/books/search:
+  /books/search:
     get:
       tags:
       - "download"
@@ -609,4 +610,3 @@ definitions:
         format: uuid
         example: 7898c443-48e6-476d-a603-4e300d0e9d1a
         description: "The ID for the uploaded book."
-        
