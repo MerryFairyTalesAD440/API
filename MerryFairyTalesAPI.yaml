@@ -1,0 +1,612 @@
+swagger: '2.0'
+info:
+  description: The Merry Fairy Tales API
+  version: '1.0'
+  title: MerryFairyTales API
+  license:
+    name: Apache 2.0 - Swagger UI
+    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+basePath: /merryfairytalesURL
+tags:
+- name: upload
+  description: API to upload books.
+  externalDocs:
+    url: "http://ourdocumentation.com"
+- name: download
+  description: API to download books.
+  externalDocs:
+    url: "http://ourdocumentation.com"
+- name: edit
+  description: API to edit books.
+  externalDocs:
+    url: "http://ourdocumentation.com"
+- name: delete
+  description: API to delete books.
+  externalDocs:
+    url: "http://ourdocumentation.com"
+paths:
+  /api/v1/books:
+    post:
+      tags:
+          - "upload"
+      summary: "Upload a new book."
+      description: "Uploads a new book to Merry Fairy Tales. The initial upload includes basic information about the book and the cover page image. Upload of the pages for the book is handled by the uploadPage operation."
+      operationId: "uploadBook"
+      consumes:
+        - "multipart/form-data"
+      produces:
+        - "application/json"
+      parameters:
+      - name: "title"
+        in: "formData"
+        description: "The title of the book."
+        required: true
+        type: "string"
+      - name: "description"
+        in: "formData"
+        description: "A brief description of the book."
+        required: false
+        type: "string"
+      - name: "author"
+        in: "formData"
+        description: "The author of the book."
+        required: false
+        type: "string"  
+      - name: "languages"
+        in: "formData"
+        description: "The languages the book is available in."
+        required: true
+        type: "array"
+        items:
+          type: "string"
+          enum:
+          - "en_US"
+          - "fr_FR"
+          - "es_ES"
+          - "...."
+        collectionFormat: "multi"
+      - name: "pageCount"
+        in: "formData"
+        description: "The page count."
+        required: false
+        type: "integer"
+      - name: "bookCover"
+        in: "formData"
+        description: "Book cover image."
+        required: false
+        type: "file"
+      responses:
+        200:
+          description: "Book successfully uploaded."
+          schema:
+            $ref: "#/definitions/BookUploadedResponse"
+        400:
+          description: "Could not complete request.  Missing or invalid information provided."
+        401:
+          description: "Unauthorized access."
+        500:
+          description: "A system error occurred."
+    get:
+      tags:
+      - "download"
+      summary: "Download all books."
+      description: "Returns an array of all books."
+      operationId: "downloadAllBooks"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Books successfully downloaded."
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Book"
+        400:
+          description: "Could not complete request.  Missing or invalid information provided."
+        401:
+          description: "Unauthorized access."
+        500:
+          description: "A system error occurred."    
+  /api/v1/books/{bookId}:
+    get:
+      tags:
+      - "download"
+      summary: "Download a book."
+      description: "Downloads all the data for a book, including the paths for the image, text, and audio files for all language versions of the book."
+      operationId: "downloadBook"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "bookId"
+        in: path
+        description: "The book ID."
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "Book successfully downloaded."
+          schema:
+            $ref: "#/definitions/Book"
+        400:
+          description: "Could not complete request."
+        401:
+          description: "Unauthorized access."
+        404:
+          description: "Book ID not found."  
+        500:
+          description: "A system error occurred."
+    put:
+      tags:
+      - "edit"
+      summary: "Edit a book."
+      description: "Edits the basic information about a book, including cover image. Fields left blank will keep their existing values. Editing of pages is handled by the editPage operation."
+      operationId: "editBook"
+      consumes:
+        - "multipart/form-data"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "bookId"
+        in: path
+        description: "The book ID."
+        required: true
+        type: "string"
+      - name: "title"
+        in: "formData"
+        description: "The title of the book."
+        required: false
+        type: "string"
+      - name: "description"
+        in: "formData"
+        description: "A brief description of the book."
+        required: false
+        type: "string"
+      - name: "author"
+        in: "formData"
+        description: "The author of the book."
+        required: false
+        type: "string"  
+      - name: "languages"
+        in: "formData"
+        description: "The languages the book is available in."
+        required: false
+        type: "array"
+        items:
+          type: "string"
+          enum:
+          - "en_US"
+          - "fr_FR"
+          - "es_ES"
+          - "...."
+        collectionFormat: "multi"
+      - name: "pageCount"
+        in: "formData"
+        description: "The page count."
+        required: false
+        type: "integer"
+      - name: "bookCover"
+        in: "formData"
+        description: "Book cover image."
+        required: false
+        type: "file"
+      responses:
+        200:
+          description: "Book successfully updated."
+          schema:
+            $ref: "#/definitions/Book"
+        400:
+          description: "Could not complete request.  Missing or invalid information provided."
+        401:
+          description: "Unauthorized access."
+        404:
+          description: "Book ID not found."
+        500:
+          description: "A system error occurred."
+    delete:
+      tags:
+      - "delete"
+      summary: "Delete a book."
+      description: "Deletes the book entirely, including the book information, images, text, and audio files for all languages."
+      operationId: "deleteBook"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "bookId"
+        in: path
+        description: "The book ID."
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "Book deleted."
+        400:
+          description: "Could not complete request.  Missing or invalid information provided."
+        401:
+          description: "Unauthorized access."
+        404:
+          description: "Book ID not found."
+        500:
+          description: "A system error occurred."
+  /api/v1/books/{bookId}/pages:
+    post:
+      tags:
+          - "upload"
+      summary: "Upload a new page."
+      description: "Uploads a new page for a book in the specified language."
+      operationId: "uploadPage"
+      consumes:
+        - "multipart/form-data"
+      produces:
+        - "application/json"
+      parameters:
+      - name: "bookId"
+        in: path
+        description: "The book ID."
+        required: true
+        type: "string"
+      - name: "language"
+        in: query
+        description: "The language."
+        required: true
+        type: "string"  
+        enum:
+          - "en_US"
+          - "fr_FR"
+          - "es_ES"
+          - "...."
+      - name: "pageNumber"
+        in: "formData"
+        description: "The page number."
+        required: true
+        type: "integer"
+      - name: "pageImage"
+        in: "formData"
+        description: "Page image."
+        required: true
+        type: "file"
+      - name: "pageText"
+        in: "formData"
+        description: "Page text."
+        required: true
+        type: "file"
+      - name: "pageAudio"
+        in: "formData"
+        description: "Page audio."
+        required: true
+        type: "file"
+      responses:
+        200:
+          description: "Page successfully uploaded."
+          schema:
+            $ref: "#/definitions/Page"
+        400:
+          description: "Could not complete request.  Missing or invalid information provided."
+        401:
+          description: "Unauthorized access."
+        404:
+          description: "Book ID not found."   
+        500:
+          description: "A system error occurred."
+    get:
+      tags:
+          - "download"
+      summary: "Download all pages."
+      description: "Downloads all of the pages of a book in the specified language. Returns an array of pages."
+      operationId: "getPages"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "bookId"
+        in: path
+        description: "The book ID."
+        required: true
+        type: "string"
+      - name: "language"
+        in: query
+        description: "The language."
+        required: true
+        type: "string"  
+        enum:
+          - "en_US"
+          - "fr_FR"
+          - "es_ES"
+          - "...."
+      responses:
+        200:
+          description: "Pages successfully downloaded."
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Page"
+        400:
+          description: "Could not complete request."
+        401:
+          description: "Unauthorized access."
+        404:
+          description: "Book ID not found."  
+        500:
+          description: "A system error occurred."
+    delete:
+      tags:
+      - "delete"
+      summary: "Delete all pages for specified language."
+      description: "Deletes all pages of a book in the specifed language."
+      operationId: "deletePageByLanguage"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "bookId"
+        in: path
+        description: "The book ID."
+        required: true
+        type: "string"
+      - name: "language"
+        in: query
+        description: "The language."
+        required: true
+        type: "string"  
+        enum:
+          - "en_US"
+          - "fr_FR"
+          - "es_ES"
+          - "...."  
+      responses:
+        200:
+          description: "All pages for specified language deleted."
+        400:
+          description: "Could not complete request.  Missing or invalid information provided."
+        401:
+          description: "Unauthorized access."
+        404:
+          description: "Book ID not found."
+        500:
+          description: "A system error occurred."      
+  /api/v1/books/{bookId}/pages/{pageNumber}:
+    get:
+      tags:
+          - "download"
+      summary: "Download a page."
+      description: "Downloads a page of a book in the specified language."
+      operationId: "getPage"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "bookId"
+        in: path
+        description: "The book ID."
+        required: true
+        type: "string"
+      - name: "pageNumber"
+        in: path
+        description: "The page number."
+        required: true
+        type: "integer"
+      - name: "language"
+        in: query
+        description: "The language."
+        required: true
+        type: "string"  
+        enum:
+          - "en_US"
+          - "fr_FR"
+          - "es_ES"
+          - "...."
+      responses:
+        200:
+          description: "Page successfully downloaded."
+          schema:
+            $ref: "#/definitions/Page"
+        400:
+          description: "Could not complete request."
+        401:
+          description: "Unauthorized access."
+        404:
+          description: "Page not found."  
+        500:
+          description: "A system error occurred."
+    put:
+      tags:
+          - "edit"
+      summary: "Edit a page."
+      description: "Edits a page for a book in the specified language. Only fields for which a file is uploaded will be updated."
+      operationId: "editPage"
+      consumes:
+        - "multipart/form-data"
+      produces:
+        - "application/json"
+      parameters:
+      - name: "bookId"
+        in: path
+        description: "The book ID."
+        required: true
+        type: "string"
+      - name: "pageNumber"
+        in: path
+        description: "The page number."
+        required: true
+        type: "integer"
+      - name: "language"
+        in: query
+        description: "The language."
+        required: true
+        type: "string"  
+        enum:
+          - "en_US"
+          - "fr_FR"
+          - "es_ES"
+          - "...."
+      - name: "pageImage"
+        in: "formData"
+        description: "Page image."
+        required: false
+        type: "file"
+      - name: "pageText"
+        in: "formData"
+        description: "Page text."
+        required: false
+        type: "file"
+      - name: "pageAudio"
+        in: "formData"
+        description: "Page audio."
+        required: false
+        type: "file"
+      responses:
+        200:
+          description: "Page successfully updated."
+          schema:
+            $ref: "#/definitions/Page"
+        400:
+          description: "Could not complete request.  Missing or invalid information provided."
+        401:
+          description: "Unauthorized access."
+        404:
+          description: "Page not found."   
+        500:
+          description: "A system error occurred."  
+    delete:
+      tags:
+      - "delete"
+      summary: "Delete a page."
+      description: "Deletes a page of a book in the specifed language."
+      operationId: "deletePage"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "bookId"
+        in: path
+        description: "The book ID."
+        required: true
+        type: "string"
+      - name: "pageNumber"
+        in: path
+        description: "The page number."
+        required: true
+        type: "integer"
+      - name: "language"
+        in: query
+        description: "The language."
+        required: true
+        type: "string"  
+        enum:
+          - "en_US"
+          - "fr_FR"
+          - "es_ES"
+          - "...."  
+      responses:
+        200:
+          description: "Page deleted."
+        400:
+          description: "Could not complete request.  Missing or invalid information provided."
+        401:
+          description: "Unauthorized access."
+        404:
+          description: "Page not found."
+        500:
+          description: "A system error occurred."
+  /api/v1/books/search:
+    get:
+      tags:
+      - "download"
+      summary: "Search books."
+      description: "Returns an array of books based on a keyword search."
+      operationId: "searchBooks"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "keywords"
+        in: "query"
+        description: "Keywords to search for."
+        required: true
+        type: "array"
+        items:
+          type: "string"
+        collectionFormat: "multi"
+      responses:
+        200:
+          description: "Successful operation."
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Book"
+        400:
+          description: "Could not complete request.  Missing or invalid information provided."
+        401:
+          description: "Unauthorized access."
+        500:
+          description: "A system error occurred." 
+externalDocs:
+  url: 'https://developers.google.com/accounts/docs/OAuth2'
+securityDefinitions:
+  OauthSecurity:
+    type: oauth2
+    flow: accessCode
+    authorizationUrl: 'https://accounts.google.com/o/oauth2/v2/auth'
+    tokenUrl: 'https://www.googleapis.com/oauth2/v4/token'
+    scopes:
+      admin: Admin scope
+      user: User scope
+definitions:
+  Book:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+        example: 7898c443-48e6-476d-a603-4e300d0e9d1a
+      title:
+        type: string
+        example: Cinderella
+      description:
+        type: string
+        example: Cinderella is a folk tale embodying a myth-element of unjust oppression and triumphant reward.
+      author:
+        type: string
+        example: Marcia Brown
+      languages:
+        $ref: "#/definitions/Language"
+    xml:
+      name: Book
+  Language:
+    type: object
+    properties:
+      language:
+        type: string
+        enum:
+        - "en_US"
+        - "fr_FR"
+        - "es_ES"
+        - "...."
+        example: en_US
+      pages:
+        $ref: "#/definitions/Page"
+    xml:
+      name: Language
+  Page:
+    type: object
+    properties:
+      pageNumber:
+        type: integer
+        example: 1
+      imageUrl:
+        type: string
+        example: https://imageUrl_uniqeID.jpg
+      text_url:
+        type: string
+        example: https://texturl.uniqueID.txt
+      audio_url:
+        type: string
+        example: https://audiourl.uniqeId.mp3
+    xml:
+      name: Page
+  BookUploadedResponse:
+    type: object
+    properties:
+      title:
+        type: string
+        example: Cinderella
+      bookId:
+        type: string
+        format: uuid
+        example: 7898c443-48e6-476d-a603-4e300d0e9d1a
+        description: "The ID for the uploaded book."
+        
