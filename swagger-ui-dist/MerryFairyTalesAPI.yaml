@@ -1,0 +1,276 @@
+swagger: '2.0'
+info:
+  description: The Merry Fairy Tales API
+  version: '1.0'
+  title: MerryFairyTales API
+  license:
+    name: Apache 2.0 - Swagger UI
+    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+host: "api.merryfairytales.io"    
+basePath: "/v1"
+tags:
+  - name: upload
+    description: API to upload books.
+  - name: download
+    description: API to download books.
+  - name: edit
+    description: API to edit books.
+  - name: delete
+    description: API to delete books.
+paths:
+  '/books':
+    post:
+      tags:
+        - upload
+      summary: Upload a new book.
+      description: Uploads a new book to Merry Fairy Tales. The initial upload includes basic information about the book.
+      operationId: uploadBook
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: The book to be added
+          required: true
+          schema:
+            $ref: '#/definitions/NewBook'
+      responses:
+        '200':
+          description: Book successfully uploaded.
+          schema:
+            $ref: '#/definitions/BookUploadedResponse'
+        '400':
+          description: >-
+            Could not complete request.  Missing or invalid information
+            provided.
+        '401':
+          description: Unauthorized access.
+        '500':
+          description: A system error occurred.
+    put:
+      tags:
+        - edit
+      summary: Edit a book.
+      description: Edits an existing book. Can add new pages or languages to a book. Can also be used to upload a cover image for the book.
+      operationId: editBook
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: The book to be added
+          required: true
+          schema:
+            $ref: '#/definitions/Book'
+      responses:
+        '200':
+          description: Book successfully updated.
+          schema:
+            $ref: '#/definitions/Book'
+        '400':
+          description: >-
+            Could not complete request.  Missing or invalid information
+            provided.
+        '401':
+          description: Unauthorized access.
+        '404':
+          description: Book ID not found.
+        '500':
+          description: A system error occurred.      
+    get:
+      tags:
+        - download
+      summary: Download all books.
+      description: Returns an array of all books.
+      operationId: downloadAllBooks
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Books successfully downloaded.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Book'
+        '400':
+          description: >-
+            Could not complete request.  Missing or invalid information
+            provided.
+        '401':
+          description: Unauthorized access.
+        '500':
+          description: A system error occurred.
+  '/books/{bookId}':
+    get:
+      tags:
+        - download
+      summary: Download a book.
+      description: Downloads all the data for a book, including the paths for the image, text, and audio files for each page of the book in all available languages.
+      operationId: downloadBook
+      produces:
+        - application/json
+      parameters:
+        - name: bookId
+          in: path
+          description: The book ID.
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Book successfully downloaded.
+          schema:
+            $ref: '#/definitions/Book'
+        '400':
+          description: Could not complete request.
+        '401':
+          description: Unauthorized access.
+        '404':
+          description: Book ID not found.
+        '500':
+          description: A system error occurred.
+    delete:
+      tags:
+        - delete
+      summary: Delete a book.
+      description: Deletes the book entirely, including the book information, images, text, and audio files for all languages.
+      operationId: deleteBook
+      produces:
+        - application/json
+      parameters:
+        - name: bookId
+          in: path
+          description: The book ID.
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Book deleted.
+        '400':
+          description: Could not complete request.  Missing or invalid information provided.
+        '401':
+          description: Unauthorized access.
+        '404':
+          description: Book ID not found.
+        '500':
+          description: A system error occurred.
+  '/books/search':
+    get:
+      tags:
+        - download
+      summary: Search books.
+      description: Returns an array of books based on a keyword search.
+      operationId: searchBooks
+      produces:
+        - application/json
+      parameters:
+        - name: keywords
+          in: query
+          description: Keywords to search for.
+          required: true
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
+      responses:
+        '200':
+          description: Successful operation.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Book'
+        '400':
+          description: >-
+            Could not complete request.  Missing or invalid information
+            provided.
+        '401':
+          description: Unauthorized access.
+        '500':
+          description: A system error occurred.
+externalDocs:
+  url: 'https://developers.google.com/accounts/docs/OAuth2'
+securityDefinitions:
+  OauthSecurity:
+    type: oauth2
+    flow: accessCode
+    authorizationUrl: 'https://accounts.google.com/o/oauth2/v2/auth'
+    tokenUrl: 'https://www.googleapis.com/oauth2/v4/token'
+    scopes:
+      admin: Admin scope
+      user: User scope
+definitions:
+  NewBook:
+    type: object
+    properties:
+      title:
+        type: string
+        example: Cinderella
+      description:
+        type: string
+        example: >-
+          Cinderella is a folk tale embodying a myth-element of unjust
+          oppression and triumphant reward.
+      author:
+        type: string
+        example: Marcia Brown
+  Book:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+        example: 7898c443-48e6-476d-a603-4e300d0e9d1a
+      title:
+        type: string
+        example: Cinderella
+      description:
+        type: string
+        example: >-
+          Cinderella is a folk tale embodying a myth-element of unjust
+          oppression and triumphant reward.
+      author:
+        type: string
+        example: Marcia Brown
+      cover_image:
+        type: string
+        example: 'https://imageurl_cover_image.png'
+      pages:
+        $ref: '#/definitions/Page'
+    xml:
+      name: Book
+  Page:
+    type: object
+    properties:
+      number:
+        type: integer
+        example: 1
+      image_url:
+        type: string
+        example: 'https://imageurl_page1_image1.png'
+      languages:
+        type: array
+        items:
+          type: string
+        example: 
+          - language: en_US
+            text: 'https://contenturl_en_US_UNIQUE_ID.txt'
+            audio: 'https://audiourl.en_US_UNIQUE_ID.mp3'
+          - language: fr_FR
+            text: 'https://contenturl_fr_FR_UNIQUE_ID.txt'
+            audio: 'https://audiourl._fr_FR_UNIQUE_ID.mp3'
+    xml:
+      name: Page
+  BookUploadedResponse:
+    type: object
+    properties:
+      title:
+        type: string
+        example: Cinderella
+      bookId:
+        type: string
+        format: uuid
+        example: 7898c443-48e6-476d-a603-4e300d0e9d1a
+        description: The ID for the uploaded book.
