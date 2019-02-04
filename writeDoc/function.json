@@ -1,3 +1,28 @@
 ﻿{
-
+  "bindings": [
+    {
+      "authLevel": "function",
+      "name": "req",
+      "type": "httpTrigger",
+      "direction": "in",
+      "methods": [
+        "get",
+        "post"
+      ]
+    },
+    {
+      "name": "$return",
+      "type": "http",
+      "direction": "out"
+    },
+    {
+      "type": "cosmosDB",
+      "name": "documentToSave",
+      "databaseName": "Hello",
+      "collectionName": "Items",
+      "createIfNotExists": true,
+      "connectionStringSetting": "nscad440-francesco-dev-db_DOCUMENTDB",
+      "direction": "out"
+    }
+  ]
 }
