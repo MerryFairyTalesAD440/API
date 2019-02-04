@@ -4,6 +4,9 @@ using System;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
+//receive HTTP POST payload and insert into CosmosDB as new document
+//works with bindings found in function.json
+//@author Francesco Ward
 public static void Run(HttpRequest req, out object documentToSave, TraceWriter log)
 {
     log.Info($"C# HTTP trigger function processed: {req}");
