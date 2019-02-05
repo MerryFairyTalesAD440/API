@@ -266,11 +266,19 @@ definitions:
   BookUploadedResponse:
     type: object
     properties:
-      title:
-        type: string
-        example: Cinderella
-      bookId:
+      id:
         type: string
         format: uuid
         example: 7898c443-48e6-476d-a603-4e300d0e9d1a
-        description: The ID for the uploaded book.
+        description: The id for the uploaded book.
+      title:
+        type: string
+        example: Cinderella
+      description:
+        type: string
+        example: >-
+          Cinderella is a folk tale embodying a myth-element of unjust
+          oppression and triumphant reward.
+      author:
+        type: string
+        example: Marcia Brown
