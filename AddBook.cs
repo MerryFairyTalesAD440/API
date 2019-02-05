@@ -28,13 +28,15 @@ namespace API.Function
             log.LogInformation("C# HTTP trigger function processed a request to add a new book");
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             dynamic book = JsonConvert.DeserializeObject<Book>(requestBody);
-            // create container for new book
+            // TODO: create container for new book
+            book.id = System.Guid.NewGuid().ToString();
             await books.AddAsync(book);
             return (ActionResult)new OkObjectResult(book);
         }
 
     /* New Book Data Model */
     public class Book {
+        public string id { get; set; }
         public string title { get; set; }
         public string description { get; set; }
         public string author { get; set; }
