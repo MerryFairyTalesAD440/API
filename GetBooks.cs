@@ -16,13 +16,10 @@ namespace Company.Function
         /* GetBooks - function to list all books. */
         [FunctionName("GetBooks")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)] HttpRequest req,
             ILogger log)
         {
             log.LogInformation("C# HTTP trigger function processed a request to get list of books");
-
-            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            dynamic data = JsonConvert.DeserializeObject(requestBody);
            
             string jsonFormatted = Newtonsoft.Json.JsonConvert.SerializeObject(getJsonBooks(), Newtonsoft.Json.Formatting.Indented);
            
