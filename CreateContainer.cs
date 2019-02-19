@@ -33,11 +33,13 @@ namespace CreateContainer
             Console.WriteLine();
             ProcessAsync(name).GetAwaiter().GetResult();
 
+            Console.WriteLine("Press \"Control + C\" to exit.");
+
             return name != null
                 ? (ActionResult)new OkObjectResult("Container created with the name \"" + name + "\"")
                 : new BadRequestObjectResult("Please pass a name on the query string or in the request body");
 
-            //Console.WriteLine("Press \"Control + C\" to exit.");
+
             //Console.ReadLine();
             //Console.WriteLine("===============================================");
 
