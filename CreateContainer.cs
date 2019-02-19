@@ -47,6 +47,19 @@ namespace CreateContainer
 
         private static async Task ProcessAsync(string containerName)
         {
+            // KEY VAULT: Install NuGet Packages, search for "KeyVault", and "adal"
+
+            //var context = new AuthenticationContext("https://login.windows.net/" + tenantId);
+            //ClientCredential clientCredential = new ClientCredential(appId, secretKey);
+            //var tokenResponse = await context.AcquireTokenAsync("https://vault.azure.net", clientCredential);
+            //var accessToken = tokenResponse.AccessToken;
+            //return accessToken;
+
+
+
+
+
+
             CloudStorageAccount storageAccount = null;
             CloudBlobContainer cloudBlobContainer = null;
             //string sourceFile = null;
