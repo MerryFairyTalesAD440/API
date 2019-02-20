@@ -30,7 +30,7 @@ namespace mikalFunctionsDemo
         /// <param name="log"></param>
         /// <param name="context"></param>
         /// <returns></returns>
-        [FunctionName("getSAS")]
+        [FunctionName("getsas")]
         [Produces("application/json")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
@@ -53,113 +53,97 @@ namespace mikalFunctionsDemo
             //uncomment for testing
             //containerName = "getsastoken";
             containerName = data?.container;
-            //i have no idea how they are going to pass the tokens yet
-            //here just for testing
-            if (data?.authorizationToken != null)
-            {
-                //only checking if the token is a valid one for right now
-                GoogleJsonWebSignature.Payload validToken = await GoogleJsonWebSignature.ValidateAsync(data?.authorizationToken);
-                if (validToken != null)
-                {
-                    //apply for key vault client
-                    var serviceTokenProvider = new AzureServiceTokenProvider();
-                    var keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(serviceTokenProvider.KeyVaultTokenCallback));
-                    //storage variables for secrets
-                    SecretBundle secretUri;
-                    SecretBundle secrectKey;
-                    SecretBundle secretAccount;
-                    //try and get storage uri
-                    try
-                    {
-                        secretUri = await keyVaultClient.GetSecretAsync($"{config["KeyVaultUri"]}secrets/uri/");
-                    }
-                    //display unauthorize error.  Im not sure which code to return for this catch
-                    catch (KeyVaultErrorException ex)
-                    {
-                        return new ForbidResult("Unable to access URI in vault!");
-                    }
-                    //try and get storage account name
-                    try
-                    {
-                        secretAccount = await keyVaultClient.GetSecretAsync($"{config["KeyVaultUri"]}secrets/account/");
-                    }
-                    //display unauthorize error.  Im not sure which code to return for this catch
-                    catch (KeyVaultErrorException ex)
-                    {
-                        return new ForbidResult("Unable to access account name in vault!");
-                    }
-                    //try and get storage account key
-                    try
-                    {
-                        secrectKey = await keyVaultClient.GetSecretAsync($"{config["KeyVaultUri"]}secrets/key/");
-                    }
-                    //display unauthorize error.  Im not sure which code to return for this catch
-                    catch (KeyVaultErrorException ex)
-                    {
-                        return new ForbidResult("Unable to access key in vault!");
-                    }
 
-                    //set uri
-                    Uri address = new Uri(secretUri.Value.ToString() + containerName);
-                    StorageCredentials credentials = new StorageCredentials(secretAccount.Value.ToString(), secrectKey.Value.ToString());
-                    //apply credentials
-                    CloudBlobContainer name = new CloudBlobContainer(address, credentials);
-                    //only looking for getsastoken for now.  we may change this later
-                    if (String.Compare(containerName.ToLower().Trim(), "getsastoken") == 0)
-                    {
-                        String[] result = getContainerSasUri(name);
-                        //return uri, sas token, and message
-                        return (ActionResult)new OkObjectResult(new
-                        {
-                            uri = result[0],
-                            token = result[1],
-                            message = "SAS Token good for 60 minutes.  Token has Read/Write/Delete Privileges. File name should be appended in between uri and sas token on upload."
-                        });
-                    }
-                    else
-                    {
-                        //return error specifying container name
-                        return new BadRequestObjectResult("Please pass a container name in the request body! For example: container:getsastoken");
-                    }
-                }
-                //throw unauthorized error
-                else
-                {
-                    return new UnauthorizedResult();
-                }
+            //apply for key vault client
+            var serviceTokenProvider = new AzureServiceTokenProvider();
+            var keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(serviceTokenProvider.KeyVaultTokenCallback));
+            //storage variables for secrets
+            SecretBundle secretUri;
+            SecretBundle secrectKey;
+            SecretBundle secretAccount;
+            //try and get storage uri
+            try
+            {
+                secretUri = await keyVaultClient.GetSecretAsync($"{config["KeyVaultUri"]}secrets/uri/");
             }
-            //throw unauthorized error
-            else {
-                return new UnauthorizedResult();
+            //display unauthorize error.  Im not sure which code to return for this catch
+            catch (KeyVaultErrorException ex)
+            {
+                return new ForbidResult("Unable to access URI in vault!");
+            }
+            //try and get storage account name
+            try
+            {
+                secretAccount = await keyVaultClient.GetSecretAsync($"{config["KeyVaultUri"]}secrets/account/");
+            }
+            //display unauthorize error.  Im not sure which code to return for this catch
+            catch (KeyVaultErrorException ex)
+            {
+                return new ForbidResult("Unable to access account name in vault!");
+            }
+            //try and get storage account key
+            try
+            {
+                secrectKey = await keyVaultClient.GetSecretAsync($"{config["KeyVaultUri"]}secrets/key/");
+            }
+            //display unauthorize error.  Im not sure which code to return for this catch
+            catch (KeyVaultErrorException ex)
+            {
+                return new ForbidResult("Unable to access key in vault!");
             }
 
-        }
-
-        /// <summary>
-        /// helper function uses issue sas token on container passed in
-        /// </summary>
-        /// <param name="container"></param>
-        /// <returns>string [] with uri and sas token</returns>
-        private static string[] getContainerSasUri(CloudBlobContainer container)
-        {
-            string sasContainerToken;
-            string[] result = new string[2];
-            //create policy
-            SharedAccessBlobPolicy adHocPolicy = new SharedAccessBlobPolicy()
+            //set uri
+            Uri address = new Uri(secretUri.Value.ToString() + containerName);
+            StorageCredentials credentials = new StorageCredentials(secretAccount.Value.ToString(), secrectKey.Value.ToString());
+            //apply credentials
+            CloudBlobContainer name = new CloudBlobContainer(address, credentials);
+            //only looking for getsastoken for now.  we may change this later
+            if (String.Compare(containerName.ToLower().Trim(), "getsastoken") == 0)
             {
-                //set sas token expiration and access policy
-                SharedAccessExpiryTime = DateTime.UtcNow.AddMinutes(60),
-                Permissions = SharedAccessBlobPermissions.Write | SharedAccessBlobPermissions.Read | SharedAccessBlobPermissions.Delete
-            };
+                String[] result = getContainerSasUri(name);
+                //return uri, sas token, and message
+                return (ActionResult)new OkObjectResult(new
+                {
+                    uri = result[0],
+                    token = result[1],
+                    message = "SAS Token good for 60 minutes.  Token has Read/Write/Delete Privileges. File name should be appended in between uri and sas token on upload."
+                });
+            }
+            else
+            {
+                //return error specifying container name
+                return new BadRequestObjectResult("Please pass a container name in the request body! For example: container:getsastoken");
+            }
+        
 
-            //generate sas token on container using adhoc policy
-            sasContainerToken = container.GetSharedAccessSignature(adHocPolicy, null);
-            result[0] = container.Uri.ToString();
-            result[1] = sasContainerToken.ToString();
-            // Return an array containing the uri and sas token
-            return result;
-        }
+    
+}
 
-    }
+/// <summary>
+/// helper function uses issue sas token on container passed in
+/// </summary>
+/// <param name="container"></param>
+/// <returns>string [] with uri and sas token</returns>
+private static string[] getContainerSasUri(CloudBlobContainer container)
+{
+    string sasContainerToken;
+    string[] result = new string[2];
+    //create policy
+    SharedAccessBlobPolicy adHocPolicy = new SharedAccessBlobPolicy()
+    {
+        //set sas token expiration and access policy
+        SharedAccessExpiryTime = DateTime.UtcNow.AddMinutes(60),
+        Permissions = SharedAccessBlobPermissions.Write | SharedAccessBlobPermissions.Read | SharedAccessBlobPermissions.Delete
+    };
+
+    //generate sas token on container using adhoc policy
+    sasContainerToken = container.GetSharedAccessSignature(adHocPolicy, null);
+    result[0] = container.Uri.ToString();
+    result[1] = sasContainerToken.ToString();
+    // Return an array containing the uri and sas token
+    return result;
+}
+
+}
     
 }
