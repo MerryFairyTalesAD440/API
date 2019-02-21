@@ -31,6 +31,7 @@ namespace mikalFunctionsDemo
         /// <param name="context"></param>
         /// <returns></returns>
         [FunctionName("sastoken")]
+        [Consumes("application/json")]
         [Produces("application/json")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "v1/sastoken")] HttpRequest req,
