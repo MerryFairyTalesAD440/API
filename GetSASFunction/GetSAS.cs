@@ -30,10 +30,10 @@ namespace mikalFunctionsDemo
         /// <param name="log"></param>
         /// <param name="context"></param>
         /// <returns></returns>
-        [FunctionName("getsas")]
+        [FunctionName("sastoken")]
         [Produces("application/json")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "v1/sastoken")] HttpRequest req,
             ILogger log, ExecutionContext context)
         {
             log.LogInformation("SAS token creation.");
@@ -97,9 +97,11 @@ namespace mikalFunctionsDemo
             StorageCredentials credentials = new StorageCredentials(secretAccount.Value.ToString(), secrectKey.Value.ToString());
             //apply credentials
             CloudBlobContainer name = new CloudBlobContainer(address, credentials);
+            //check if container exists
+            bool exist = await (name.ExistsAsync()); 
+
             //only looking for getsastoken for now.  we may change this later
-            if (String.Compare(containerName.ToLower().Trim(), "getsastoken") == 0)
-            {
+            if (exist) { 
                 String[] result = getContainerSasUri(name);
                 //return uri, sas token, and message
                 return (ActionResult)new OkObjectResult(new
@@ -111,8 +113,8 @@ namespace mikalFunctionsDemo
             }
             else
             {
-                //return error specifying container name
-                return new BadRequestObjectResult("Please pass a container name in the request body! For example: container:getsastoken");
+                //return error telling user container doesnt exist
+                return new BadRequestObjectResult("Container does not exist or wrong information passed! For example: container:getsastoken");
             }
         
 
