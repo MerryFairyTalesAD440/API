@@ -9,12 +9,12 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 
-namespace Company.Function
+namespace API.Function
 {
     public static class GetBooks
     {
-        /* GetBooks - function to list all books. */
-        [FunctionName("GetBooks")]
+        /* GET /books - function to get or list all books. */
+        [FunctionName("books")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)] HttpRequest req,
             ILogger log)
