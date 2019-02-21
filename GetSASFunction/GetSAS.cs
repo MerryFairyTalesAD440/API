@@ -100,7 +100,7 @@ namespace mikalFunctionsDemo
             //check if container exists
             bool exist = await (name.ExistsAsync()); 
 
-            //only looking for getsastoken for now.  we may change this later
+            //if container exists
             if (exist) { 
                 String[] result = getContainerSasUri(name);
                 //return uri, sas token, and message
@@ -111,6 +111,7 @@ namespace mikalFunctionsDemo
                     message = "SAS Token good for 60 minutes.  Token has Read/Write/Delete Privileges. File name should be appended in between uri and sas token on upload."
                 });
             }
+            //else return bad request error
             else
             {
                 //return error telling user container doesnt exist
