@@ -52,8 +52,8 @@ namespace mikalFunctionsDemo
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             dynamic data = JsonConvert.DeserializeObject(requestBody);
             //uncomment for testing
-            //containerName = "getsastoken";
-            containerName = data?.container;
+            containerName = "getsastoken";
+            //containerName = data?.container;
 
             //apply for key vault client
             var serviceTokenProvider = new AzureServiceTokenProvider();
