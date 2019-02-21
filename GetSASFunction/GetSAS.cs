@@ -34,7 +34,7 @@ namespace mikalFunctionsDemo
         [Consumes("application/json")]
         [Produces("application/json")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "v1/sastoken")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "v1/sastoken")] HttpRequest req,
             ILogger log, ExecutionContext context)
         {
             log.LogInformation("SAS token creation.");
