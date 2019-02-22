@@ -34,7 +34,7 @@ namespace Functions
         [Consumes("application/json")]
         [Produces("application/json")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous,"post", Route = "v1/sastoken")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous,"post", Route = null)] HttpRequest req,
             ILogger log, ExecutionContext context)
         {
             log.LogInformation("SAS token creation.");
@@ -123,6 +123,7 @@ namespace Functions
                 }
             }
             else {
+                //return error telling user wrong information passed in body
                 return new BadRequestObjectResult("Wrong information passed in the body! For example: container:getsastoken");
             }
 
