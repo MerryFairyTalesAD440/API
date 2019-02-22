@@ -51,7 +51,7 @@ namespace Functions
                         .Build();
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             dynamic data = JsonConvert.DeserializeObject(requestBody);
-            //uncomment for testing and at "get" to method
+            //uncomment for testing and add "get" to method
             //containerName = "getsastoken";
             containerName = data?.container;
             if (containerName != null)
@@ -61,7 +61,7 @@ namespace Functions
                 var keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(serviceTokenProvider.KeyVaultTokenCallback));
                 //storage variables for secrets
                 SecretBundle secretUri;
-                SecretBundle secrectKey;
+                SecretBundle secretKey;
                 SecretBundle secretAccount;
                 //try and get storage uri
                 try
@@ -86,7 +86,7 @@ namespace Functions
                 //try and get storage account key
                 try
                 {
-                    secrectKey = await keyVaultClient.GetSecretAsync($"{config["KeyVaultUri"]}secrets/key/");
+                    secretKey = await keyVaultClient.GetSecretAsync($"{config["KeyVaultUri"]}secrets/key/");
                 }
                 //display unauthorize error.  Im not sure which code to return for this catch
                 catch (KeyVaultErrorException ex)
@@ -96,7 +96,7 @@ namespace Functions
 
                 //set uri
                 Uri address = new Uri(secretUri.Value.ToString() + containerName);
-                StorageCredentials credentials = new StorageCredentials(secretAccount.Value.ToString(), secrectKey.Value.ToString());
+                StorageCredentials credentials = new StorageCredentials(secretAccount.Value.ToString(), secretKey.Value.ToString());
                 //apply credentials
                 CloudBlobContainer name = new CloudBlobContainer(address, credentials);
                 //check if container exists
