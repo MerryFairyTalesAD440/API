@@ -54,77 +54,83 @@ namespace mikalFunctionsDemo
             //uncomment for testing and at "get" to method
             //containerName = "getsastoken";
             containerName = data?.container;
-
-            //apply for key vault client
-            var serviceTokenProvider = new AzureServiceTokenProvider();
-            var keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(serviceTokenProvider.KeyVaultTokenCallback));
-            //storage variables for secrets
-            SecretBundle secretUri;
-            SecretBundle secrectKey;
-            SecretBundle secretAccount;
-            //try and get storage uri
-            try
+            if (containerName != null)
             {
-                secretUri = await keyVaultClient.GetSecretAsync($"{config["KeyVaultUri"]}secrets/uri/");
-            }
-            //display unauthorize error.  Im not sure which code to return for this catch
-            catch (KeyVaultErrorException ex)
-            {
-                return new ForbidResult("Unable to access URI in vault!");
-            }
-            //try and get storage account name
-            try
-            {
-                secretAccount = await keyVaultClient.GetSecretAsync($"{config["KeyVaultUri"]}secrets/account/");
-            }
-            //display unauthorize error.  Im not sure which code to return for this catch
-            catch (KeyVaultErrorException ex)
-            {
-                return new ForbidResult("Unable to access account name in vault!");
-            }
-            //try and get storage account key
-            try
-            {
-                secrectKey = await keyVaultClient.GetSecretAsync($"{config["KeyVaultUri"]}secrets/key/");
-            }
-            //display unauthorize error.  Im not sure which code to return for this catch
-            catch (KeyVaultErrorException ex)
-            {
-                return new ForbidResult("Unable to access key in vault!");
-            }
-
-            //set uri
-            Uri address = new Uri(secretUri.Value.ToString() + containerName);
-            StorageCredentials credentials = new StorageCredentials(secretAccount.Value.ToString(), secrectKey.Value.ToString());
-            //apply credentials
-            CloudBlobContainer name = new CloudBlobContainer(address, credentials);
-            //check if container exists
-            bool exist = await (name.ExistsAsync());
-
-            //if container exists
-            if (exist)
-            {
-                String[] result = getContainerSasUri(name);
-                //return uri, sas token, and message
-                return (ActionResult)new OkObjectResult(new
+                //apply for key vault client
+                var serviceTokenProvider = new AzureServiceTokenProvider();
+                var keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(serviceTokenProvider.KeyVaultTokenCallback));
+                //storage variables for secrets
+                SecretBundle secretUri;
+                SecretBundle secrectKey;
+                SecretBundle secretAccount;
+                //try and get storage uri
+                try
                 {
-                    uri = result[0],
-                    token = result[1],
-                    message = "SAS Token good for 60 minutes.  Token has Read/Write/Delete Privileges. File name should be appended in between uri and sas token on upload."
-                });
+                    secretUri = await keyVaultClient.GetSecretAsync($"{config["KeyVaultUri"]}secrets/uri/");
+                }
+                //display unauthorize error.  Im not sure which code to return for this catch
+                catch (KeyVaultErrorException ex)
+                {
+                    return new ForbidResult("Unable to access URI in vault!");
+                }
+                //try and get storage account name
+                try
+                {
+                    secretAccount = await keyVaultClient.GetSecretAsync($"{config["KeyVaultUri"]}secrets/account/");
+                }
+                //display unauthorize error.  Im not sure which code to return for this catch
+                catch (KeyVaultErrorException ex)
+                {
+                    return new ForbidResult("Unable to access account name in vault!");
+                }
+                //try and get storage account key
+                try
+                {
+                    secrectKey = await keyVaultClient.GetSecretAsync($"{config["KeyVaultUri"]}secrets/key/");
+                }
+                //display unauthorize error.  Im not sure which code to return for this catch
+                catch (KeyVaultErrorException ex)
+                {
+                    return new ForbidResult("Unable to access key in vault!");
+                }
+
+                //set uri
+                Uri address = new Uri(secretUri.Value.ToString() + containerName);
+                StorageCredentials credentials = new StorageCredentials(secretAccount.Value.ToString(), secrectKey.Value.ToString());
+                //apply credentials
+                CloudBlobContainer name = new CloudBlobContainer(address, credentials);
+                //check if container exists
+                bool exist = await (name.ExistsAsync());
+
+                //if container exists
+                if (exist)
+                {
+                    String[] result = getContainerSasUri(name);
+                    //return uri, sas token, and message
+                    return (ActionResult)new OkObjectResult(new
+                    {
+                        uri = result[0],
+                        token = result[1],
+                        message = "SAS Token good for 60 minutes.  Token has Read/Write/Delete Privileges. File name should be appended in between uri and sas token on upload."
+                    });
+                }
+                //else return bad request error
+                else
+                {
+                    //return error telling user container doesnt exist
+                    return new BadRequestObjectResult("Specified container does not exist!");
+
+                }
             }
-            //else return bad request error
-            else
-            {
-                //return error telling user container doesnt exist
-                return new BadRequestObjectResult("Container does not exist or wrong information passed! For example: container:getsastoken");
+            else {
+                return new BadRequestObjectResult("Wrong information passed in the body! For example: container:getsastoken");
             }
 
 
 
         }
 
-        /// <summary>
+        /// <summary> 
         /// helper function uses issue sas token on container passed in
         /// </summary>
         /// <param name="container"></param>
