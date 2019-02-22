@@ -18,6 +18,7 @@ using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using System.Text;
 using Google.Apis.Auth;
 using Google.Apis.Auth.OAuth2;
+using Newtonsoft.Json.Linq;
 
 namespace Functions
 {
@@ -60,43 +61,27 @@ namespace Functions
                 var serviceTokenProvider = new AzureServiceTokenProvider();
                 var keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(serviceTokenProvider.KeyVaultTokenCallback));
                 //storage variables for secrets
-                SecretBundle secretUri;
-                SecretBundle secretKey;
-                SecretBundle secretAccount;
+                SecretBundle secrets;
+                String uri = String.Empty;
+                String key = String.Empty;
                 //try and get storage uri
                 try
                 {
-                    secretUri = await keyVaultClient.GetSecretAsync($"{config["KeyVaultUri"]}secrets/uri/");
+                    //storage account is the keyvault key
+                    secrets = await keyVaultClient.GetSecretAsync($"{config["KeyVaultUri"]}secrets/ad440oneboxtempbb81/");
+                    //parse json stored in keyvalut
+                    JObject details = JObject.Parse(secrets.Value.ToString());
+                    uri = (string)details["uri"];
+                    key =(string) details["key"];
                 }
                 //display unauthorize error.  Im not sure which code to return for this catch
                 catch (KeyVaultErrorException ex)
                 {
-                    return new ForbidResult("Unable to access URI in vault!");
+                    return new ForbidResult("Unable to access secrets in vault!");
                 }
-                //try and get storage account name
-                try
-                {
-                    secretAccount = await keyVaultClient.GetSecretAsync($"{config["KeyVaultUri"]}secrets/account/");
-                }
-                //display unauthorize error.  Im not sure which code to return for this catch
-                catch (KeyVaultErrorException ex)
-                {
-                    return new ForbidResult("Unable to access account name in vault!");
-                }
-                //try and get storage account key
-                try
-                {
-                    secretKey = await keyVaultClient.GetSecretAsync($"{config["KeyVaultUri"]}secrets/key/");
-                }
-                //display unauthorize error.  Im not sure which code to return for this catch
-                catch (KeyVaultErrorException ex)
-                {
-                    return new ForbidResult("Unable to access key in vault!");
-                }
-
                 //set uri
-                Uri address = new Uri(secretUri.Value.ToString() + containerName);
-                StorageCredentials credentials = new StorageCredentials(secretAccount.Value.ToString(), secretKey.Value.ToString());
+                Uri address = new Uri(uri + containerName);
+                StorageCredentials credentials = new StorageCredentials("ad440oneboxtempbb81", key);
                 //apply credentials
                 CloudBlobContainer name = new CloudBlobContainer(address, credentials);
                 //check if container exists
