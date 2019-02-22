@@ -19,7 +19,7 @@ using System.Text;
 using Google.Apis.Auth;
 using Google.Apis.Auth.OAuth2;
 
-namespace mikalFunctionsDemo
+namespace Functions
 {
     public static class getSAS
     {
