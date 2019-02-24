@@ -325,12 +325,145 @@ paths:
           description: Book ID or page ID not found.
         '500':
           description: A system error occurred.
+  '/books/{bookId}/pages/{pageId}':
+    post:
+      tags:
+        - upload
+      summary: Upload a page
+      description: Uploads a page. User sets the page number.
+      operationId: uploadPage
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: bookId
+          in: path
+          description: The book ID.
+          required: true
+          type: string
+        - name: pageId
+          in: path
+          description: The page ID.
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Page successfully updated.
+          schema:
+            $ref: '#/definitions/Book'
+        '400':
+          description: >-
+            Could not complete request.  Missing or invalid information
+            provided.
+        '401':
+          description: Unauthorized access.
+        '404':
+          description: Book ID or Page ID not found.
+        '500':
+          description: A system error occurred. 
+    put:
+      tags:
+        - edit
+      summary: Edit a page
+      description: Edits a page
+      operationId: editPage
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: bookId
+          in: path
+          description: The book ID.
+          required: true
+          type: string
+        - name: pageId
+          in: path
+          description: The page ID.
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Page successfully updated.
+          schema:
+            $ref: '#/definitions/Book'
+        '400':
+          description: >-
+            Could not complete request.  Missing or invalid information
+            provided.
+        '401':
+          description: Unauthorized access.
+        '404':
+          description: Book ID or page ID not found.
+        '500':
+          description: A system error occurred.    
+    get:
+      tags:
+        - download
+      summary: Download a page
+      description: Downloads a page of a book
+      operationId: downloadPage
+      produces:
+        - application/json
+      parameters:
+        - name: bookId
+          in: path
+          description: The book ID.
+          required: true
+          type: string
+        - name: pageId
+          in: path
+          description: The page ID.
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Page successfully downloaded.
+          schema:
+            $ref: '#/definitions/Page'
+        '400':
+          description: Could not complete request.
+        '401':
+          description: Unauthorized access.
+        '404':
+          description: Book ID or page ID not found.
+        '500':
+          description: A system error occurred.
+    delete:
+      tags:
+        - delete
+      summary: Delete a page
+      description: Deletes the page.
+      operationId: deletePage
+      parameters:
+        - name: bookId
+          in: path
+          description: The book ID.
+          required: true
+          type: string
+        - name: pageId
+          in: path
+          description: The page ID.
+          required: true
+          type: string   
+      responses:
+        '200':
+          description: Page deleted.
+        '400':
+          description: Could not complete request.  Missing or invalid information provided.
+        '401':
+          description: Unauthorized access.
+        '404':
+          description: Book ID or page ID not found.
+        '500':
+          description: A system error occurred.        
   '/books/{bookId}/pages/{pageId}/languages/{languageCode}':
     post:
       tags:
         - upload
       summary: Upload a page language
-      description: Uploads a page language.
+      description: Uploads a language for a page. User sets the language code.
       operationId: uploadPageLanguage
       consumes:
         - application/json
@@ -354,7 +487,7 @@ paths:
           type: string  
       responses:
         '200':
-          description: Language successfully added for page
+          description: Language successfully added for page.
           schema:
             $ref: '#/definitions/Book'
         '400':
@@ -364,7 +497,7 @@ paths:
         '401':
           description: Unauthorized access.
         '404':
-          description: Book ID, page ID, or language code not found.
+          description: Book ID or page ID not found.
         '500':
           description: A system error occurred. 
     put:
@@ -395,7 +528,7 @@ paths:
           type: string  
       responses:
         '200':
-          description: Page language successfully updated
+          description: Page language successfully updated.
           schema:
             $ref: '#/definitions/Book'
         '400':
@@ -469,7 +602,7 @@ paths:
           type: string
       responses:
         '200':
-          description: Image deleted.
+          description: Language deleted.
         '400':
           description: Could not complete request.  Missing or invalid information provided.
         '401':
@@ -507,7 +640,7 @@ paths:
           type: string
       responses:
         '200':
-          description: Text successfully added
+          description: Text successfully added.
           schema:
             $ref: '#/definitions/Book'
         '400':
@@ -548,7 +681,7 @@ paths:
           type: string
       responses:
         '200':
-          description: Text successfully updated
+          description: Text successfully updated.
           schema:
             $ref: '#/definitions/Book'
         '400':
@@ -662,7 +795,7 @@ paths:
           type: string
       responses:
         '200':
-          description: Language successfully updated
+          description: Audio successfully uploaded.
           schema:
             $ref: '#/definitions/Book'
         '400':
@@ -703,7 +836,7 @@ paths:
           type: string
       responses:
         '200':
-          description: Audio successfully updated
+          description: Audio successfully updated.
           schema:
             $ref: '#/definitions/Book'
         '400':
