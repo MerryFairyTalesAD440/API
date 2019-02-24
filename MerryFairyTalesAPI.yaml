@@ -22,7 +22,7 @@ paths:
     post:
       tags:
         - upload
-      summary: Upload a new book.
+      summary: Upload a new book
       description: Uploads a new book to Merry Fairy Tales. The initial upload includes basic information about the book.
       operationId: uploadBook
       consumes:
@@ -52,7 +52,7 @@ paths:
     put:
       tags:
         - edit
-      summary: Edit a book.
+      summary: Edit a book
       description: Edits an existing book. Can add new pages or languages to a book. Can also be used to upload a cover image for the book.
       operationId: editBook
       consumes:
@@ -84,7 +84,7 @@ paths:
     get:
       tags:
         - download
-      summary: Download all books.
+      summary: Download all books
       description: Returns an array of all books.
       operationId: downloadAllBooks
       produces:
@@ -108,7 +108,7 @@ paths:
     get:
       tags:
         - download
-      summary: Download a book.
+      summary: Download a book
       description: Downloads all the data for a book, including the paths for the image, text, and audio files for each page of the book in all available languages.
       operationId: downloadBook
       produces:
@@ -135,7 +135,7 @@ paths:
     delete:
       tags:
         - delete
-      summary: Delete a book.
+      summary: Delete a book
       description: Deletes the book entirely, including the book information, images, text, and audio files for all languages.
       operationId: deleteBook
       produces:
@@ -161,7 +161,7 @@ paths:
     get:
       tags:
         - download
-      summary: Search books.
+      summary: Search books
       description: Returns an array of books based on a keyword search.
       operationId: searchBooks
       produces:
@@ -188,6 +188,604 @@ paths:
             provided.
         '401':
           description: Unauthorized access.
+        '500':
+          description: A system error occurred.
+  '/books/{bookId}/pages/{pageId}/image':
+    post:
+      tags:
+        - upload
+      summary: Upload a page image
+      description: Uploads a page image.
+      operationId: uploadPageImage
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: bookId
+          in: path
+          description: The book ID.
+          required: true
+          type: string
+        - name: pageId
+          in: path
+          description: The page ID.
+          required: true
+          type: string 
+      responses:
+        '200':
+          description: Image successfully uploaded
+          schema:
+            $ref: '#/definitions/Book'
+        '400':
+          description: >-
+            Could not complete request.  Missing or invalid information
+            provided.
+        '401':
+          description: Unauthorized access.
+        '404':
+          description: Book ID or page ID not found.
+        '500':
+          description: A system error occurred. 
+    put:
+      tags:
+        - edit
+      summary: Edit a page image
+      description: Edits a page image.
+      operationId: editPageImage
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: bookId
+          in: path
+          description: The book ID.
+          required: true
+          type: string
+        - name: pageId
+          in: path
+          description: The page ID.
+          required: true
+          type: string   
+      responses:
+        '200':
+          description: Image successfully updated
+          schema:
+            $ref: '#/definitions/Book'
+        '400':
+          description: >-
+            Could not complete request.  Missing or invalid information
+            provided.
+        '401':
+          description: Unauthorized access.
+        '404':
+          description: Book ID or page ID not found.
+        '500':
+          description: A system error occurred.    
+    get:
+      tags:
+        - download
+      summary: Download a page image.
+      description: Downloads the image for a page of a book
+      operationId: downloadPageImage
+      produces:
+        - application/json
+      parameters:
+        - name: bookId
+          in: path
+          description: The book ID.
+          required: true
+          type: string
+        - name: pageId
+          in: path
+          description: The page ID.
+          required: true
+          type: string   
+      responses:
+        '200':
+          description: Image successfully downloaded.
+          schema:
+            $ref: '#/definitions/GetImageResponse'
+        '400':
+          description: Could not complete request.
+        '401':
+          description: Unauthorized access.
+        '404':
+          description: Book ID or page ID not found.
+        '500':
+          description: A system error occurred.
+    delete:
+      tags:
+        - delete
+      summary: Delete a page image
+      description: Deletes the page image.
+      operationId: deletePageImage
+      produces:
+        - application/json
+      parameters:
+        - name: bookId
+          in: path
+          description: The book ID.
+          required: true
+          type: string
+        - name: pageId
+          in: path
+          description: The page ID.
+          required: true
+          type: string 
+      responses:
+        '200':
+          description: Image deleted.
+        '400':
+          description: Could not complete request.  Missing or invalid information provided.
+        '401':
+          description: Unauthorized access.
+        '404':
+          description: Book ID or page ID not found.
+        '500':
+          description: A system error occurred.
+  '/books/{bookId}/pages/{pageId}/languages/{languageCode}':
+    post:
+      tags:
+        - upload
+      summary: Upload a page language
+      description: Uploads a page language.
+      operationId: uploadPageLanguage
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: bookId
+          in: path
+          description: The book ID.
+          required: true
+          type: string
+        - name: pageId
+          in: path
+          description: The page ID.
+          required: true
+          type: string  
+        - name: languageCode
+          in: path
+          description: The Language Code.
+          required: true
+          type: string  
+      responses:
+        '200':
+          description: Language successfully added for page
+          schema:
+            $ref: '#/definitions/Book'
+        '400':
+          description: >-
+            Could not complete request.  Missing or invalid information
+            provided.
+        '401':
+          description: Unauthorized access.
+        '404':
+          description: Book ID, page ID, or language code not found.
+        '500':
+          description: A system error occurred. 
+    put:
+      tags:
+        - edit
+      summary: Edit a language for a page
+      description: Edits a page's language.
+      operationId: editPageLanguage
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: bookId
+          in: path
+          description: The book ID.
+          required: true
+          type: string
+        - name: pageId
+          in: path
+          description: The page ID.
+          required: true
+          type: string 
+        - name: languageCode
+          in: path
+          description: The Language Code.
+          required: true
+          type: string  
+      responses:
+        '200':
+          description: Page language successfully updated
+          schema:
+            $ref: '#/definitions/Book'
+        '400':
+          description: >-
+            Could not complete request.  Missing or invalid information
+            provided.
+        '401':
+          description: Unauthorized access.
+        '404':
+          description: Book ID, page ID, or language code not found.
+        '500':
+          description: A system error occurred.    
+    get:
+      tags:
+        - download
+      summary: Download a language for a page
+      description: Downloads a language for a page of a book
+      operationId: downloadPageLanguage
+      produces:
+        - application/json
+      parameters:
+        - name: bookId
+          in: path
+          description: The book ID.
+          required: true
+          type: string
+        - name: pageId
+          in: path
+          description: The page ID.
+          required: true
+          type: string   
+        - name: languageCode
+          in: path
+          description: The Language Code.
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Langauge successfully downloaded.
+          schema:
+            $ref: '#/definitions/GetLanguageResponse'
+        '400':
+          description: Could not complete request.
+        '401':
+          description: Unauthorized access.
+        '404':
+          description: Book ID, page ID, or language code not found.
+        '500':
+          description: A system error occurred.
+    delete:
+      tags:
+        - delete
+      summary: Delete a language for page
+      description: Deletes the page language.
+      operationId: deletePageLanguage
+      parameters:
+        - name: bookId
+          in: path
+          description: The book ID.
+          required: true
+          type: string
+        - name: pageId
+          in: path
+          description: The page ID.
+          required: true
+          type: string   
+        - name: languageCode
+          in: path
+          description: The Language Code.
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Image deleted.
+        '400':
+          description: Could not complete request.  Missing or invalid information provided.
+        '401':
+          description: Unauthorized access.
+        '404':
+          description: Book ID, page ID, or language code not found.
+        '500':
+          description: A system error occurred.
+  '/books/{bookId}/pages/{pageId}/languages/{languageCode}/text':
+    post:
+      tags:
+        - upload
+      summary: Upload text
+      description: Uploads a page of text for a specific language
+      operationId: uploadPageText
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: bookId
+          in: path
+          description: The book ID.
+          required: true
+          type: string
+        - name: pageId
+          in: path
+          description: The page ID.
+          required: true
+          type: string   
+        - name: languageCode
+          in: path
+          description: The Language Code.
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Text successfully added
+          schema:
+            $ref: '#/definitions/Book'
+        '400':
+          description: >-
+            Could not complete request.  Missing or invalid information
+            provided.
+        '401':
+          description: Unauthorized access.
+        '404':
+          description: Book ID, page ID, or language code not found.
+        '500':
+          description: A system error occurred. 
+    put:
+      tags:
+        - edit
+      summary: Edit text
+      description: Edits a page of text in a specific language
+      operationId: editPageText
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: bookId
+          in: path
+          description: The book ID.
+          required: true
+          type: string
+        - name: pageId
+          in: path
+          description: The page ID.
+          required: true
+          type: string 
+        - name: languageCode
+          in: path
+          description: The Language Code.
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Text successfully updated
+          schema:
+            $ref: '#/definitions/Book'
+        '400':
+          description: >-
+            Could not complete request.  Missing or invalid information
+            provided.
+        '401':
+          description: Unauthorized access.
+        '404':
+          description: Book ID, page ID, or language code not found.
+        '500':
+          description: A system error occurred.    
+    get:
+      tags:
+        - download
+      summary: Download text
+      description: Downloads the text for a page of a specific language
+      operationId: downloadPageText
+      produces:
+        - application/json
+      parameters:
+        - name: bookId
+          in: path
+          description: The book ID.
+          required: true
+          type: string
+        - name: pageId
+          in: path
+          description: The page ID.
+          required: true
+          type: string 
+        - name: languageCode
+          in: path
+          description: The Language Code.
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Text successfully downloaded.
+          schema:
+            $ref: '#/definitions/GetTextResponse'
+        '400':
+          description: Could not complete request.
+        '401':
+          description: Unauthorized access.
+        '404':
+          description: Book ID, page ID, or language code not found.
+        '500':
+          description: A system error occurred.
+    delete:
+      tags:
+        - delete
+      summary: Delete text
+      description: Deletes the page of text for a specific page.
+      operationId: deletePageText
+      produces:
+        - application/json
+      parameters:
+        - name: bookId
+          in: path
+          description: The book ID.
+          required: true
+          type: string
+        - name: pageId
+          in: path
+          description: The page ID.
+          required: true
+          type: string 
+        - name: languageCode
+          in: path
+          description: The Language Code.
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Text deleted.
+        '400':
+          description: Could not complete request.  Missing or invalid information provided.
+        '401':
+          description: Unauthorized access.
+        '404':
+          description: Book ID, page ID, or language code not found.
+        '500':
+          description: A system error occurred.
+  '/books/{bookId}/pages/{pageId}/languages/{languageCode}/audio':
+    post:
+      tags:
+        - upload
+      summary: Upload audio
+      description: Uploads a audio for a specific language for a page
+      operationId: uploadPageAudio
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: bookId
+          in: path
+          description: The book ID.
+          required: true
+          type: string
+        - name: pageId
+          in: path
+          description: The page ID.
+          required: true
+          type: string 
+        - name: languageCode
+          in: path
+          description: The Language Code.
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Language successfully updated
+          schema:
+            $ref: '#/definitions/Book'
+        '400':
+          description: >-
+            Could not complete request.  Missing or invalid information
+            provided.
+        '401':
+          description: Unauthorized access.
+        '404':
+          description:  Book ID, page ID, or language code not found.
+        '500':
+          description: A system error occurred. 
+    put:
+      tags:
+        - edit
+      summary: Edits audio for page
+      description: Edits a page audio.
+      operationId: editPageAudio
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: bookId
+          in: path
+          description: The book ID.
+          required: true
+          type: string
+        - name: pageId
+          in: path
+          description: The page ID.
+          required: true
+          type: string   
+        - name: languageCode
+          in: path
+          description: The Language Code.
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Audio successfully updated
+          schema:
+            $ref: '#/definitions/Book'
+        '400':
+          description: >-
+            Could not complete request.  Missing or invalid information
+            provided.
+        '401':
+          description: Unauthorized access.
+        '404':
+          description: Book ID, page ID, or language code not found.
+        '500':
+          description: A system error occurred.    
+    get:
+      tags:
+        - download
+      summary: Download audio
+      description: Downloads the audio for a page in a specific language
+      operationId: downloadPageAudio
+      produces:
+        - application/json
+      parameters:
+        - name: bookId
+          in: path
+          description: The book ID.
+          required: true
+          type: string
+        - name: pageId
+          in: path
+          description: The page ID.
+          required: true
+          type: string 
+        - name: languageCode
+          in: path
+          description: The Language Code.
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Audio successfully downloaded.
+          schema:
+            $ref: '#/definitions/GetAudioResponse'
+        '400':
+          description: Could not complete request.
+        '401':
+          description: Unauthorized access.
+        '404':
+          description: Book ID, page ID, or language code not found.
+        '500':
+          description: A system error occurred.
+    delete:
+      tags:
+        - delete
+      summary: Delete audio
+      description: Deletes audio for a page in a specified language.
+      operationId: deletePageAudio
+      produces:
+        - application/json
+      parameters:
+        - name: bookId
+          in: path
+          description: The book ID.
+          required: true
+          type: string
+        - name: pageId
+          in: path
+          description: The page ID.
+          required: true
+          type: string 
+        - name: languageCode
+          in: path
+          description: The Language Code.
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Audio deleted.
+        '400':
+          description: Could not complete request.  Missing or invalid information provided.
+        '401':
+          description: Unauthorized access.
+        '404':
+          description: Book ID, page ID, or language code not found.
         '500':
           description: A system error occurred.
 externalDocs:
@@ -256,11 +854,11 @@ definitions:
           type: string
         example: 
           - language: en_US
-            text: 'https://contenturl_en_US_UNIQUE_ID.txt'
-            audio: 'https://audiourl.en_US_UNIQUE_ID.mp3'
+            text_url: 'https://contenturl_en_US_UNIQUE_ID.txt'
+            audio_url: 'https://audiourl.en_US_UNIQUE_ID.mp3'
           - language: fr_FR
-            text: 'https://contenturl_fr_FR_UNIQUE_ID.txt'
-            audio: 'https://audiourl._fr_FR_UNIQUE_ID.mp3'
+            text_url: 'https://contenturl_fr_FR_UNIQUE_ID.txt'
+            audio_url: 'https://audiourl._fr_FR_UNIQUE_ID.mp3'
     xml:
       name: Page
   BookUploadedResponse:
@@ -282,3 +880,32 @@ definitions:
       author:
         type: string
         example: Marcia Brown
+  GetImageResponse:
+    type: object
+    properties:
+      image_url:
+        type: string
+        example: 'https://imageurl_page1_image1.png'
+  GetLanguageResponse:
+    type: object
+    properties:
+      language:
+        type: array
+        items:
+          type: string
+        example: 
+          - language: en_US
+            text_url: 'https://contenturl_en_US_UNIQUE_ID.txt'
+            audio_url: 'https://audiourl.en_US_UNIQUE_ID.mp3'
+  GetTextResponse:
+    type: object
+    properties:
+      text_url:
+        type: string
+        example: 'https://contenturl_en_US_UNIQUE_ID.txt'
+  GetAudioResponse:
+    type: object
+    properties:
+      audio_url:
+        type: string
+        example: 'https://audiourl.en_US_UNIQUE_ID.mp3'
