@@ -66,12 +66,13 @@ namespace CreateContainer
                     cloudBlobContainer = cloudBlobClient.GetContainerReference(containerName);
                     await cloudBlobContainer.CreateAsync();
 
-                    // Set the permissions so the blobs are public. 
-                    BlobContainerPermissions permissions = new BlobContainerPermissions
-                    {
-                        PublicAccess = BlobContainerPublicAccessType.Blob
-                    };
-                    await cloudBlobContainer.SetPermissionsAsync(permissions);
+                    //// Set the permissions so the blobs are public. If commented out, the default should make it only readable to the owner of the storage account.
+                    //BlobContainerPermissions permissions = new BlobContainerPermissions
+                    //{
+                    //    PrivateAccess = 
+                    //    PublicAccess = BlobContainerPublicAccessType.Blob
+                    //};
+                    //await cloudBlobContainer.SetPermissionsAsync(permissions);
 
                 }
                 catch (StorageException ex)
