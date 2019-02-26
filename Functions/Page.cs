@@ -11,8 +11,10 @@ namespace Functions
     {
         [JsonProperty(PropertyName = "number")]
         public string number { get; set; }
+
         [JsonProperty(PropertyName = "image_url")]
         public string image_url { get; set; }
+
         [JsonConverter(typeof(StringConverter<Language>))]
         [JsonProperty(PropertyName = "languages")]
         public List<Language> languages { get; set; }
