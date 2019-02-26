@@ -33,13 +33,13 @@ namespace Functions
             //reversed for testing purposes
             if (!validDocument(data))
             {
-                FeedOptions queryOptions = new FeedOptions { EnableCrossPartitionQuery=true};
+                FeedOptions queryOptions = new FeedOptions { EnableCrossPartitionQuery=true };
                 client = new DocumentClient(new Uri("https://localhost:8081"), "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==");
-                IQueryable<Book> familyQueryInSql = client.CreateDocumentQuery<Book>(UriFactory.CreateDocumentCollectionUri("MerryFairyTales", "Books"),
+                IQueryable<Book> bookQuery = client.CreateDocumentQuery<Book>(UriFactory.CreateDocumentCollectionUri("MerryFairyTales", "Books"),
                 "SELECT * FROM Books WHERE Books.id = '1'",
                 queryOptions);
 
-                foreach (Book b in familyQueryInSql)
+                foreach (Book b in bookQuery)
                 {
                     var checkValue = b;
                 }
