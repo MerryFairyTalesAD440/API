@@ -24,10 +24,13 @@ namespace Functions
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "books/{bid}/pages/{pid}/language/{lid}")] HttpRequest req, ILogger log)
         {
-            DocumentClient client;
+
             log.LogInformation("Http function to put page and language");
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+            //not passing any information yet.  only trying to connect and read from the db with classes
             dynamic data = JsonConvert.DeserializeObject(requestBody);
+            DocumentClient client;
+            //reversed for testing purposes
             if (!validDocument(data))
             {
                 FeedOptions queryOptions = new FeedOptions { EnableCrossPartitionQuery=true};
