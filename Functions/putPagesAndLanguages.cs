@@ -51,6 +51,11 @@ namespace Functions
             }
         }
 
+        /// <summary>
+        /// Checking if the proper information was passed
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
         public static bool validDocument(dynamic data)
         {
             bool valid = false;
