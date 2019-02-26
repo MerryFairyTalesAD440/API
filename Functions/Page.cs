@@ -16,10 +16,5 @@ namespace Functions
         [JsonConverter(typeof(StringConverter<Language>))]
         [JsonProperty(PropertyName = "languages")]
         public List<Language> languages { get; set; }
-        public override string ToString()
-        {
-            return JsonConvert.SerializeObject(this, Formatting.Indented);
-            //  return JsonConvert.SerializeObject(this, Formatting.Indented);
-        }
     }
 }
