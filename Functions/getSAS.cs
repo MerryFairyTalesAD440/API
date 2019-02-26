@@ -22,7 +22,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Functions
 {
-    public static class getSAS
+    public static class GetSAS
     {
         /// <summary>
         /// Azure function for generating a SAS token on a container
@@ -35,7 +35,7 @@ namespace Functions
         [Consumes("application/json")]
         [Produces("application/json")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous,"post", Route = null)] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous,"get", Route = null)] HttpRequest req,
             ILogger log, ExecutionContext context)
         {
             log.LogInformation("SAS token creation.");
@@ -91,13 +91,11 @@ namespace Functions
                 if (exist)
                 {
                     String[] result = getContainerSasUri(name);
+                    var obj = new { uri = result[0], token = result[1], message = "SAS Token good for 60 minutes.  Token has Read/Write/Delete Privileges. File name should be appended in between uri and sas token on upload." };
+                    var jsonToReturn = JsonConvert.SerializeObject(obj, Formatting.Indented);
                     //return uri, sas token, and message
-                    return (ActionResult)new OkObjectResult(new
-                    {
-                        uri = result[0],
-                        token = result[1],
-                        message = "SAS Token good for 60 minutes.  Token has Read/Write/Delete Privileges. File name should be appended in between uri and sas token on upload."
-                    });
+                    return (ActionResult)new OkObjectResult(jsonToReturn);
+                 
                 }
                 //else return bad request error
                 else
