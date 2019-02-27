@@ -19,6 +19,7 @@ using System.Text;
 using Google.Apis.Auth;
 using Google.Apis.Auth.OAuth2;
 using Newtonsoft.Json.Linq;
+using System.Net.Http;
 
 namespace Functions
 {
@@ -35,10 +36,16 @@ namespace Functions
         [Consumes("application/json")]
         [Produces("application/json")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous,"get", Route = null)] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous,"get","post", Route = null)] HttpRequestMessage req,
             ILogger log, ExecutionContext context)
         {
+
             log.LogInformation("SAS token creation.");
+            //only allow post methods
+            if (req.Method != HttpMethod.Post)
+            {
+                return (ActionResult)new StatusCodeResult(405);
+            }
             string containerName = String.Empty;
             //use configuration builder for variables
             //azure functions does not use configuration manager in .net core 2
@@ -50,7 +57,7 @@ namespace Functions
                         .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
                         .AddEnvironmentVariables()
                         .Build();
-            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+            string requestBody = await req.Content.ReadAsStringAsync();
             dynamic data = JsonConvert.DeserializeObject(requestBody);
             //uncomment for testing and add "get" to method
             //containerName = "getsastoken";
@@ -68,7 +75,7 @@ namespace Functions
                 try
                 {
                     //storage account is the keyvault key
-                    secrets = await keyVaultClient.GetSecretAsync($"{config["KeyVaultUri"]}secrets/ad440oneboxtempbb81/");
+                    secrets = await keyVaultClient.GetSecretAsync($"{config["KEY_VAULT_URI"]}secrets/{config["STORAGE_NAME"]}/");
                     //parse json stored in keyvalut
                     JObject details = JObject.Parse(secrets.Value.ToString());
                     uri = (string)details["uri"];
@@ -81,7 +88,7 @@ namespace Functions
                 }
                 //set uri
                 Uri address = new Uri(uri + containerName);
-                StorageCredentials credentials = new StorageCredentials("ad440oneboxtempbb81", key);
+                StorageCredentials credentials = new StorageCredentials($"{config["STORAGE_NAME"]}", key);
                 //apply credentials
                 CloudBlobContainer name = new CloudBlobContainer(address, credentials);
                 //check if container exists
