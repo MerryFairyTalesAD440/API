@@ -10,20 +10,20 @@ namespace Functions
     class Book
     {
         [JsonProperty(PropertyName = "id")]
-        public String id { get; set; }
+        public String Id { get; set; }
 
         [JsonProperty(PropertyName = "description")]
-        public String description { get; set; }
+        public String Description { get; set; }
 
         [JsonProperty(PropertyName = "author")]
-        public String author { get; set; }
+        public String Author { get; set; }
 
         [JsonProperty(PropertyName = "cover_image")]
-        public String cover_image { get; set; }
+        public String Cover_Image { get; set; }
 
         [JsonConverter(typeof(StringConverter<Page>))]
         [JsonProperty(PropertyName = "pages")]
-        public List<Page> pages { get; set; }
+        public List<Page> Pages { get; set; }
 
         public override string ToString()
         {

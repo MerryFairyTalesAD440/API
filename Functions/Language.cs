@@ -13,10 +13,10 @@ namespace Functions
         public string language { get; set; }
 
         [JsonProperty(PropertyName = "text_url")]
-        public string text_url { get; set; }
+        public string Text_Url { get; set; }
 
         [JsonProperty(PropertyName = "audio_url")]
-        public string audio_url { get; set; }
+        public string Audio_Url { get; set; }
 
     }
 }

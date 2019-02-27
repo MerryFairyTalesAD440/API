@@ -10,13 +10,13 @@ namespace Functions
     class Page
     {
         [JsonProperty(PropertyName = "number")]
-        public string number { get; set; }
+        public string Number { get; set; }
 
         [JsonProperty(PropertyName = "image_url")]
-        public string image_url { get; set; }
+        public string Image_Url { get; set; }
 
         [JsonConverter(typeof(StringConverter<Language>))]
         [JsonProperty(PropertyName = "languages")]
-        public List<Language> languages { get; set; }
+        public List<Language> Languages { get; set; }
     }
 }
