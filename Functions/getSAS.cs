@@ -22,7 +22,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Functions
 {
-    public static class getSAS
+    public static class GetSAS
     {
         /// <summary>
         /// Azure function for generating a SAS token on a container
@@ -68,7 +68,7 @@ namespace Functions
                 try
                 {
                     //storage account is the keyvault key
-                    secrets = await keyVaultClient.GetSecretAsync($"{config["KeyVaultUri"]}secrets/ad440oneboxtempbb81/");
+                    secrets = await keyVaultClient.GetSecretAsync($"{config["KEY_VAULT_URI"]}secrets/{config["STORAGE_NAME"]}/");
                     //parse json stored in keyvalut
                     JObject details = JObject.Parse(secrets.Value.ToString());
                     uri = (string)details["uri"];
@@ -81,7 +81,7 @@ namespace Functions
                 }
                 //set uri
                 Uri address = new Uri(uri + containerName);
-                StorageCredentials credentials = new StorageCredentials("ad440oneboxtempbb81", key);
+                StorageCredentials credentials = new StorageCredentials($"{config["STORAGE_NAME"]}", key);
                 //apply credentials
                 CloudBlobContainer name = new CloudBlobContainer(address, credentials);
                 //check if container exists
@@ -91,13 +91,11 @@ namespace Functions
                 if (exist)
                 {
                     String[] result = getContainerSasUri(name);
+                    var obj = new { uri = result[0], token = result[1], message = "SAS Token good for 60 minutes.  Token has Read/Write/Delete Privileges. File name should be appended in between uri and sas token on upload." };
+                    var jsonToReturn = JsonConvert.SerializeObject(obj, Formatting.Indented);
                     //return uri, sas token, and message
-                    return (ActionResult)new OkObjectResult(new
-                    {
-                        uri = result[0],
-                        token = result[1],
-                        message = "SAS Token good for 60 minutes.  Token has Read/Write/Delete Privileges. File name should be appended in between uri and sas token on upload."
-                    });
+                    return (ActionResult)new OkObjectResult(jsonToReturn);
+                 
                 }
                 //else return bad request error
                 else
