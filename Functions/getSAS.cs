@@ -19,6 +19,7 @@ using System.Text;
 using Google.Apis.Auth;
 using Google.Apis.Auth.OAuth2;
 using Newtonsoft.Json.Linq;
+using System.Net.Http;
 
 namespace Functions
 {
@@ -35,10 +36,16 @@ namespace Functions
         [Consumes("application/json")]
         [Produces("application/json")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous,"post", Route = null)] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous,"get","post", Route = null)] HttpRequestMessage req,
             ILogger log, ExecutionContext context)
         {
+
             log.LogInformation("SAS token creation.");
+            //only allow post methods
+            if (req.Method != HttpMethod.Post)
+            {
+                return (ActionResult)new StatusCodeResult(405);
+            }
             string containerName = String.Empty;
             //use configuration builder for variables
             //azure functions does not use configuration manager in .net core 2
@@ -50,7 +57,7 @@ namespace Functions
                         .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
                         .AddEnvironmentVariables()
                         .Build();
-            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+            string requestBody = await req.Content.ReadAsStringAsync();
             dynamic data = JsonConvert.DeserializeObject(requestBody);
             //uncomment for testing and add "get" to method
             //containerName = "getsastoken";
