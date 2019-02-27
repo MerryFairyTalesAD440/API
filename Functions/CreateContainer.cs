@@ -12,7 +12,6 @@ using Microsoft.Azure.Services.AppAuthentication;
 using Microsoft.Azure.KeyVault;
 
 
-
 namespace CreateContainer
 {
     public static class CreateContainer

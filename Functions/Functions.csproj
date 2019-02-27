@@ -21,4 +21,7 @@
       <CopyToPublishDirectory>Never</CopyToPublishDirectory>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="buildContainer.cs" />
+  </ItemGroup>
 </Project>
