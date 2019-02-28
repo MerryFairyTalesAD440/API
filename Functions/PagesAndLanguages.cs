@@ -25,7 +25,7 @@ namespace Functions
         [Consumes("application/json")]
         [Produces("application/json")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "put", "post", Route = "books/{bookid}/pages/{pageid}/language/{languagecode}")] HttpRequestMessage req, ILogger log, string bookid, string pageid, string languagecode, ExecutionContext context)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "books/{bookid}/pages/{pageid}/language/{languagecode}")] HttpRequestMessage req, ILogger log, string bookid, string pageid, string languagecode, ExecutionContext context)
         {
             log.LogInformation("Http function to put page and language");
             string requestBody = await req.Content.ReadAsStringAsync();
@@ -63,6 +63,14 @@ namespace Functions
                   "SELECT a.id, a.title, a.description, a.author, a.pages FROM Books a JOIN b IN a.pages JOIN c IN b.languages  WHERE a.id = \'" + bookid + "\' AND b.number = \'"
                   + pageid + "\' AND c.language = \'" + languagecode + "\'",
                   queryOptions);
+                //set book
+                Book newBook = new Book();
+                newBook.Author = data?.author;
+                newBook.Id = data?.id;
+                newBook.Pages = data?.pages.ToObject<List<Page>>();
+                newBook.Cover_Image = data?.cover_image;
+                newBook.Description = data?.description;
+                newBook.Title = data?.title;
                 // if post
                 if (req.Method == HttpMethod.Post)
                 {
@@ -76,14 +84,6 @@ namespace Functions
                     {
                         try
                         {
-                            //set book
-                            Book newBook = new Book();
-                            newBook.Author = data?.author;
-                            newBook.Id = data?.id;
-                            newBook.Pages = data?.pages.ToObject<List<Page>>();
-                            newBook.Cover_Image = data?.cover_image;
-                            newBook.Description = data?.description;
-                            newBook.Title = data?.title;
                             //create document
                             await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri($"{config["COSMOS_DB"]}", $"{config["COSMOS_COLLECTION"]}"), newBook);
                             return (ActionResult)new OkObjectResult("Language successfully added for page.");
@@ -96,21 +96,13 @@ namespace Functions
 
                 }
                 //if post
-                if (req.Method == HttpMethod.Put)
+                if (req.Method == HttpMethod.Get)
                 {
                     //check if book is returned
                     if (returnsValue<Book>(bookQuery))
                     {
                         try
                         {
-                            //set book
-                            Book newBook = new Book();
-                            newBook.Author = data?.author;
-                            newBook.Id = data?.id;
-                            newBook.Pages = data?.pages.ToObject<List<Page>>();
-                            newBook.Cover_Image = data?.cover_image;
-                            newBook.Description = data?.description;
-                            newBook.Title = data?.title;
                             //update document in db
                             await client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri($"{config["COSMOS_DB"]}", $"{config["COSMOS_COLLECTION"]}"), newBook);
                             return (ActionResult)new OkObjectResult("Page language successfully updated.");
