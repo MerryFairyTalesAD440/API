@@ -16,6 +16,10 @@ using MongoDB.Driver.Linq;
 using System.Net.Http;
 using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Azure.KeyVault;
+using Microsoft.Azure.Services.AppAuthentication;
+using Microsoft.Azure.KeyVault.Models;
+using Newtonsoft.Json.Linq;
 
 namespace Functions
 {
@@ -27,8 +31,9 @@ namespace Functions
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "books/{bookid}/pages/{pageid}/language/{languagecode}")] HttpRequestMessage req, ILogger log, string bookid, string pageid, string languagecode, ExecutionContext context)
         {
-            log.LogInformation("Http function to put page and language");
+            log.LogInformation("Http function to put/post page and language");
             string requestBody = await req.Content.ReadAsStringAsync();
+         
             //declare client
             DocumentClient client;
            
@@ -55,14 +60,46 @@ namespace Functions
             //validate json
             if (validDocument(data))
             {
-                //adding comment to test push
+                //apply for key vault client
+                var serviceTokenProvider = new AzureServiceTokenProvider();
+                var keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(serviceTokenProvider.KeyVaultTokenCallback));
+               
+                //storage variables for secrets
+                SecretBundle secrets;
+                String uri = String.Empty;
+                String key = String.Empty;
+                String database = String.Empty;
+                String collection = String.Empty;
+                //try and get storage uri
+
+                try
+                {
+                    //storage account is the keyvault key
+                    secrets = await keyVaultClient.GetSecretAsync($"{config["KEY_VAULT_URI"]}secrets/{config["COSMOS_NAME"]}/");
+                    //parse json stored in keyvalut
+                    JObject details = JObject.Parse(secrets.Value.ToString());
+                    uri = (string)details["COSMOS_URI"];
+                    key = (string)details["COSMOS_KEY"];
+                    database = (string)details["COSMOS_DB"];
+                    collection = (string)details["COSMOS_COLLECTION"];
+                }
+           
+                //display unauthorize error.  Im not sure which code to return for this catch
+                catch (KeyVaultErrorException ex)
+                {
+                    return new ForbidResult("Unable to access secrets in vault!");
+                }
+
                 //set options client and query
                 FeedOptions queryOptions = new FeedOptions { EnableCrossPartitionQuery = true };
-                client = new DocumentClient(new Uri($"{config["COSMOS_URI"]}"), $"{config["COSMOS_KEY"]}");
-                IQueryable<Book> bookQuery = client.CreateDocumentQuery<Book>(UriFactory.CreateDocumentCollectionUri($"{config["COSMOS_DB"]}", $"{config["COSMOS_COLLECTION"]}"),
+                client = new DocumentClient(new Uri(uri), key);
+             
+                //comos sql is a little different
+                IQueryable<Book> bookQuery = client.CreateDocumentQuery<Book>(UriFactory.CreateDocumentCollectionUri(database, collection),
                   "SELECT a.id, a.title, a.description, a.author, a.pages FROM Books a JOIN b IN a.pages JOIN c IN b.languages  WHERE a.id = \'" + bookid + "\' AND b.number = \'"
                   + pageid + "\' AND c.language = \'" + languagecode + "\'",
                   queryOptions);
+              
                 //set book
                 Book newBook = new Book();
                 newBook.Author = data?.author;
@@ -71,8 +108,9 @@ namespace Functions
                 newBook.Cover_Image = data?.cover_image;
                 newBook.Description = data?.description;
                 newBook.Title = data?.title;
+              
                 // if post
-                if (req.Method == HttpMethod.Post)
+                if (req.Method == HttpMethod.Get)
                 {
                     //check if book is returned
                     if (returnsValue<Book>(bookQuery))
@@ -85,7 +123,7 @@ namespace Functions
                         try
                         {
                             //create document
-                            await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri($"{config["COSMOS_DB"]}", $"{config["COSMOS_COLLECTION"]}"), newBook);
+                            await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), newBook);
                             return (ActionResult)new OkObjectResult("Language successfully added for page.");
                         }
                         catch (Exception ex)
@@ -95,8 +133,9 @@ namespace Functions
                     }
 
                 }
-                //if post
-                if (req.Method == HttpMethod.Get)
+            
+                //if put
+                if (req.Method == HttpMethod.Put)
                 {
                     //check if book is returned
                     if (returnsValue<Book>(bookQuery))
@@ -104,7 +143,7 @@ namespace Functions
                         try
                         {
                             //update document in db
-                            await client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri($"{config["COSMOS_DB"]}", $"{config["COSMOS_COLLECTION"]}"), newBook);
+                            await client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), newBook);
                             return (ActionResult)new OkObjectResult("Page language successfully updated.");
                         }
                         catch (Exception ex)
@@ -146,6 +185,7 @@ namespace Functions
             }
             return valid;
         }
+      
         /// <summary>
         /// Checks if a value has been returned by iqueryable
         /// </summary>
