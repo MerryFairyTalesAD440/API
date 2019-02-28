@@ -55,6 +55,7 @@ namespace Functions
             //validate json
             if (validDocument(data))
             {
+                //adding comment to test push
                 //set options client and query
                 FeedOptions queryOptions = new FeedOptions { EnableCrossPartitionQuery = true };
                 client = new DocumentClient(new Uri($"{config["COSMOS_URI"]}"), $"{config["COSMOS_KEY"]}");
