@@ -21,6 +21,9 @@ namespace Functions
         [JsonProperty(PropertyName = "cover_image")]
         public String Cover_Image { get; set; }
 
+        [JsonProperty(PropertyName = "title")]
+        public String Title { get; set; }
+
         [JsonConverter(typeof(StringConverter<Page>))]
         [JsonProperty(PropertyName = "pages")]
         public List<Page> Pages { get; set; }
