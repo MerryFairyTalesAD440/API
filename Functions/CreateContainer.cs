@@ -36,20 +36,24 @@ namespace CreateContainer
             log.LogInformation("---- starting container build function.");
             ProcessAsync(name, log, context).GetAwaiter().GetResult();
 
-
             return name != null
                 ? (ActionResult)new OkObjectResult("Container created with the name \"" + name + "\"")
                 : new BadRequestObjectResult("Please pass a name on the query string or in the request body");
         }
 
-
+        /// <summary>
+        /// Processes the async to build the access the key vault and build the container. 
+        /// </summary>
+        /// <returns>The async.</returns>
+        /// <param name="containerName">Container name.</param>
+        /// <param name="log">Log.</param>
+        /// <param name="context">Context.</param>
         private static async Task ProcessAsync(string containerName, ILogger log, ExecutionContext context)
         {
             log.LogInformation("---- in ProcessAsync function");
 
             CloudStorageAccount storageAccount = null;
             CloudBlobContainer cloudBlobContainer = null;
-
 
             //grab the environment variabled from the local.settings.json file
             string key_vault_uri = System.Environment.GetEnvironmentVariable("KEY_VAULT_URI");
@@ -65,7 +69,6 @@ namespace CreateContainer
             // Build the URL for the key vault from the settings 
             string keyVaultURI = key_vault_uri + "/secrets/" + storage_name;
             log.LogInformation("---- create the key vault URI");
-
 
             try 
             {
@@ -116,7 +119,6 @@ namespace CreateContainer
                                     "defined in the system environment variables.");
             }
         }
-
 
     }
 
