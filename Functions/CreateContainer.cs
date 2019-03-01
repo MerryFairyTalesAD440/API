@@ -41,7 +41,7 @@ namespace CreateContainer
 
         private static async Task ProcessAsync(string containerName, ILogger log, ExecutionContext context)
         {
-            log.LogInformation("---- In ProcessAsync function, attemping to access Key Vault.");
+            log.LogInformation("---- in ProcessAsync function");
 
             CloudStorageAccount storageAccount = null;
             CloudBlobContainer cloudBlobContainer = null;
@@ -51,17 +51,17 @@ namespace CreateContainer
             string key_vault_uri = System.Environment.GetEnvironmentVariable("KEY_VAULT_URI");
             string storage_name = System.Environment.GetEnvironmentVariable("STORAGE_NAME");
             string storageConnectionString = System.Environment.GetEnvironmentVariable("CONNECTION_STRING");
-
+            log.LogInformation("---- setting my local variables for the key vault");
 
             // Make a connection to key vault
             var azureServiceTokenProvider = new AzureServiceTokenProvider();
             var keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(azureServiceTokenProvider.KeyVaultTokenCallback));
-           
+            log.LogInformation("---- create a Key Vault client");
 
             // Grab the secrets from local.settings.json file
             //string connectionString = $"{config["KEY_VAULT_URI"]}/secrets/{config["STORAGE_NAME"]}/";
             string keyVaultURI = key_vault_uri + "/secrets/" + storage_name;
-            log.LogInformation("----------*" + keyVaultURI);
+            log.LogInformation("---- create the key vault URI");
 
 
             try 
@@ -69,22 +69,12 @@ namespace CreateContainer
                 var secret = await keyVaultClient.GetSecretAsync(keyVaultURI);
                 var storagePrimaryAccessKey = secret.Value;
                 storageConnectionString = storagePrimaryAccessKey;
-                log.LogInformation("----- KEY!!!" + storagePrimaryAccessKey);
+                log.LogInformation("----- connection string was retrieved from the Key Vault");
             }
             catch (Exception ex)
             {
-                log.LogInformation("Cannot access the Key Vault.");
+                log.LogInformation("----- Cannot access the Key Vault.");
             }
-           
-
-
-
-            log.LogInformation("---- URI to the key vault is... " + keyVaultURI);
-
-
-            // NOTE: By this line I should habe my storageConnectionString set and ready to be parsed.
-            log.LogInformation("---- storageConnectionString is... " + storageConnectionString);
-
 
             // Check whether the connection string can be parsed.
             if (CloudStorageAccount.TryParse(storageConnectionString, out storageAccount))
