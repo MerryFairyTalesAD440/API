@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
@@ -9,7 +8,6 @@ using Newtonsoft.Json;
 using MongoDB.Driver;
 using Microsoft.Azure.Documents.Client;
 using System.Linq;
-using MongoDB.Driver.Linq;
 using System.Net.Http;
 using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
@@ -26,19 +24,23 @@ namespace Functions
         [Consumes("application/json")]
         [Produces("application/json")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "books/{bookid}/pages/{pageid}/language/{languagecode}")] HttpRequestMessage req, ILogger log, string bookid, string pageid, string languagecode, ExecutionContext context)
+            [HttpTrigger(AuthorizationLevel.Anonymous,"put", "post", "delete", "get", Route = "books/{bookid}/pages/{pageid}/language/{languagecode}")] HttpRequestMessage req, ILogger log, string bookid, string pageid, string languagecode, ExecutionContext context)
         {
             log.LogInformation("Http function to put/post page and language");
-            string requestBody = await req.Content.ReadAsStringAsync();
-         
-            //declare client
-            DocumentClient client;
+        
+            if (req.Method == HttpMethod.Delete || req.Method == HttpMethod.Get)
+            {
+                return (ActionResult)new StatusCodeResult(405);
+            }
            
+
+            string requestBody = await req.Content.ReadAsStringAsync();
+            //declare client
+            DocumentClient client;          
             //not fool proof but will work for now
             bookid = bookid.Replace(" ", "");
             pageid = pageid.Replace(" ", "");
             languagecode = languagecode.Replace(" ", "");
-           
             //use configuration builder for variables
             //azure functions does not use configuration manager in .net core 2
             //key vault uri stored in local.settings.json file
@@ -50,8 +52,8 @@ namespace Functions
                         .AddEnvironmentVariables()
                         .Build();
             //TODO: Get data from post/put rather than reading json from a file
-            dynamic data = JsonConvert.DeserializeObject(System.IO.File.ReadAllText(@"C:\Users\mvien\desktop\sample.json"));
-            
+            //dynamic data = JsonConvert.DeserializeObject(System.IO.File.ReadAllText(@"C:\Users\mvien\desktop\sample.json"));
+            dynamic data = JsonConvert.DeserializeObject(requestBody);
             //TODO: Make sure all return paths from the swagger document are impletmented
             //validate json
             if (validDocument(data))

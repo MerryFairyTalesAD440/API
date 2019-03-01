@@ -32,14 +32,14 @@ namespace Functions
         [Consumes("application/json")]
         [Produces("application/json")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous,"get","post", Route = null)] HttpRequestMessage req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "put", "post", "delete", "get", Route = null)] HttpRequestMessage req,
             ILogger log, ExecutionContext context)
         {
 
             log.LogInformation("SAS token creation.");
             //only allow post methods
             if (req.Method != HttpMethod.Post)
-            {
+            {    
                 return (ActionResult)new StatusCodeResult(405);
             }
             string containerName = String.Empty;
@@ -56,7 +56,7 @@ namespace Functions
             string requestBody = await req.Content.ReadAsStringAsync();
             dynamic data = JsonConvert.DeserializeObject(requestBody);
             //uncomment for testing and add "get" to method
-            //containerName = "getsastoken";
+            //containerName = "merryfairytalesassets";
             containerName = data?.container;
             if (containerName != null)
             {
@@ -80,7 +80,7 @@ namespace Functions
                 //display unauthorize error.  Im not sure which code to return for this catch
                 catch (KeyVaultErrorException ex)
                 {
-                    return new ForbidResult("Unable to access secrets in vault!");
+                    return new ForbidResult("Unable to access secrets in vault!" + ex.Message.ToString());
                 }
                 //set uri
                 Uri address = new Uri(uri + containerName);
