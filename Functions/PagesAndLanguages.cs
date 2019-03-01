@@ -4,12 +4,9 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using MongoDB.Driver;
-using System.Security.Authentication;
-using MongoDB.Bson;
 using Microsoft.Azure.Documents.Client;
 using System.Linq;
 using MongoDB.Driver.Linq;
@@ -52,7 +49,6 @@ namespace Functions
                         .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
                         .AddEnvironmentVariables()
                         .Build();
-            //TODO: Set up key vault with variables and change config to look for key vault url
             //TODO: Get data from post/put rather than reading json from a file
             dynamic data = JsonConvert.DeserializeObject(System.IO.File.ReadAllText(@"C:\Users\mvien\desktop\sample.json"));
             
@@ -101,16 +97,16 @@ namespace Functions
                   queryOptions);
               
                 //set book
-                Book newBook = new Book();
-                newBook.Author = data?.author;
-                newBook.Id = data?.id;
-                newBook.Pages = data?.pages.ToObject<List<Page>>();
-                newBook.Cover_Image = data?.cover_image;
-                newBook.Description = data?.description;
-                newBook.Title = data?.title;
+                Book book = new Book();
+                book.Author = data?.author;
+                book.Id = data?.id;
+                book.Pages = data?.pages.ToObject<List<Page>>();
+                book.Cover_Image = data?.cover_image;
+                book.Description = data?.description;
+                book.Title = data?.title;
               
                 // if post
-                if (req.Method == HttpMethod.Get)
+                if (req.Method == HttpMethod.Post)
                 {
                     //check if book is returned
                     if (returnsValue<Book>(bookQuery))
@@ -123,7 +119,7 @@ namespace Functions
                         try
                         {
                             //create document
-                            await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), newBook);
+                            await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), book);
                             return (ActionResult)new OkObjectResult("Language successfully added for page.");
                         }
                         catch (Exception ex)
@@ -143,7 +139,7 @@ namespace Functions
                         try
                         {
                             //update document in db
-                            await client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), newBook);
+                            await client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), book);
                             return (ActionResult)new OkObjectResult("Page language successfully updated.");
                         }
                         catch (Exception ex)
@@ -196,8 +192,7 @@ namespace Functions
         {
             try
             {
-                //i love linq
-                return !enumerable.FirstOrDefault().Equals(default(T)) && !enumerable.Skip(1).Any();
+                return !enumerable.FirstOrDefault().Equals(default(T));
             }
             catch (Exception ex)
             {
