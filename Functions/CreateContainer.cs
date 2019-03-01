@@ -10,7 +10,10 @@ using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Microsoft.Azure.Services.AppAuthentication;
 using Microsoft.Azure.KeyVault;
-
+using Microsoft.Extensions.Configuration;
+using System;
+using Newtonsoft.Json.Linq;
+using System.Net.Http;
 
 namespace CreateContainer
 {
@@ -18,7 +21,7 @@ namespace CreateContainer
     {
         [FunctionName("CreateContainer")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)]HttpRequest req, ILogger log)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)]HttpRequest req, ILogger log, ExecutionContext context)
         {
             string name = req.Query["name"];
 
@@ -26,8 +29,8 @@ namespace CreateContainer
             dynamic data = JsonConvert.DeserializeObject(requestBody);
             name = name ?? data?.name;
 
-            log.LogInformation("starting container build function.");
-            ProcessAsync(name, log).GetAwaiter().GetResult();
+            log.LogInformation("---- starting container build function.");
+            ProcessAsync(name, log, context).GetAwaiter().GetResult();
 
 
             return name != null
@@ -36,17 +39,51 @@ namespace CreateContainer
         }
 
 
-        private static async Task ProcessAsync(string containerName, ILogger log)
+        private static async Task ProcessAsync(string containerName, ILogger log, ExecutionContext context)
         {
+            log.LogInformation("---- In ProcessAsync function, attemping to access Key Vault.");
+
             CloudStorageAccount storageAccount = null;
             CloudBlobContainer cloudBlobContainer = null;
 
-            log.LogInformation("In ProcessAsync function, attemping to access Key Vault.");
-            // Code to grab the key from the Key Vault.
+
+            //grab the environment variabled from the local.settings.json file
+            string key_vault_uri = System.Environment.GetEnvironmentVariable("KEY_VAULT_URI");
+            string storage_name = System.Environment.GetEnvironmentVariable("STORAGE_NAME");
+            string storageConnectionString = System.Environment.GetEnvironmentVariable("CONNECTION_STRING");
+
+
+            // Make a connection to key vault
             var azureServiceTokenProvider = new AzureServiceTokenProvider();
             var keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(azureServiceTokenProvider.KeyVaultTokenCallback));
-            var secret = await keyVaultClient.GetSecretAsync("https://key-vault-for-container.vault.azure.net/secrets/connection-string/");
-            string storageConnectionString = secret.Value.ToString();
+           
+
+            // Grab the secrets from local.settings.json file
+            //string connectionString = $"{config["KEY_VAULT_URI"]}/secrets/{config["STORAGE_NAME"]}/";
+            string keyVaultURI = key_vault_uri + "/secrets/" + storage_name;
+            log.LogInformation("----------*" + keyVaultURI);
+
+
+            try 
+            {
+                var secret = await keyVaultClient.GetSecretAsync(keyVaultURI);
+                var storagePrimaryAccessKey = secret.Value;
+                storageConnectionString = storagePrimaryAccessKey;
+                log.LogInformation("----- KEY!!!" + storagePrimaryAccessKey);
+            }
+            catch (Exception ex)
+            {
+                log.LogInformation("Cannot access the Key Vault.");
+            }
+           
+
+
+
+            log.LogInformation("---- URI to the key vault is... " + keyVaultURI);
+
+
+            // NOTE: By this line I should habe my storageConnectionString set and ready to be parsed.
+            log.LogInformation("---- storageConnectionString is... " + storageConnectionString);
 
 
             // Check whether the connection string can be parsed.
