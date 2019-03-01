@@ -10,10 +10,7 @@ using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Microsoft.Azure.Services.AppAuthentication;
 using Microsoft.Azure.KeyVault;
-using Microsoft.Extensions.Configuration;
 using System;
-using Newtonsoft.Json.Linq;
-using System.Net.Http;
 
 namespace CreateContainer
 {
