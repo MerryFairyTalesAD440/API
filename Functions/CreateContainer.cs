@@ -16,6 +16,13 @@ namespace CreateContainer
 {
     public static class CreateContainer
     {
+        /// <summary>
+        /// Passing in a book name will create a private container in blob storage with the name of the container being the book name. 
+        /// </summary>
+        /// <returns>The run.</returns>
+        /// <param name="req">Req.</param>
+        /// <param name="log">Log.</param>
+        /// <param name="context">Context.</param>
         [FunctionName("CreateContainer")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)]HttpRequest req, ILogger log, ExecutionContext context)
@@ -55,8 +62,7 @@ namespace CreateContainer
             var keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(azureServiceTokenProvider.KeyVaultTokenCallback));
             log.LogInformation("---- create a Key Vault client");
 
-            // Grab the secrets from local.settings.json file
-            //string connectionString = $"{config["KEY_VAULT_URI"]}/secrets/{config["STORAGE_NAME"]}/";
+            // Build the URL for the key vault from the settings 
             string keyVaultURI = key_vault_uri + "/secrets/" + storage_name;
             log.LogInformation("---- create the key vault URI");
 
