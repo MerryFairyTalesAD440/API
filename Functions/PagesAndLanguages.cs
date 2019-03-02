@@ -28,7 +28,7 @@ namespace Functions
         {
             log.LogInformation("Http function to put/post page and language");
         
-            if (req.Method == HttpMethod.Delete || req.Method == HttpMethod.Get)
+            if (req.Method == HttpMethod.Delete || req.Method == HttpMethod.Post)
             {
                 return (ActionResult)new StatusCodeResult(405);
             }
@@ -52,8 +52,8 @@ namespace Functions
                         .AddEnvironmentVariables()
                         .Build();
             //TODO: Get data from post/put rather than reading json from a file
-            //dynamic data = JsonConvert.DeserializeObject(System.IO.File.ReadAllText(@"C:\Users\mvien\desktop\sample.json"));
-            dynamic data = JsonConvert.DeserializeObject(requestBody);
+            dynamic data = JsonConvert.DeserializeObject(System.IO.File.ReadAllText(@"C:\Users\mvien\desktop\sample.json"));
+            //dynamic data = JsonConvert.DeserializeObject(requestBody);
             //TODO: Make sure all return paths from the swagger document are impletmented
             //validate json
             if (validDocument(data))
@@ -102,7 +102,19 @@ namespace Functions
                 Book book = new Book();
                 book.Author = data?.author;
                 book.Id = data?.id;
-                book.Pages = data?.pages.ToObject<List<Page>>();
+                //if pages are an array
+                try
+                {
+                    book.Pages = data?.pages.ToObject<List<Page>>();
+                }
+                //if a single page
+                catch (Exception ex) {
+                    Page [] page = new Page[1];
+                    page[0] = data?.pages.ToObject<Page>();
+                    List<Page> pages = new List<Page> { data?.pages.ToObject<Page>() };
+                    book.Pages = pages;
+                } 
+              
                 book.Cover_Image = data?.cover_image;
                 book.Description = data?.description;
                 book.Title = data?.title;
@@ -118,15 +130,31 @@ namespace Functions
                     }
                     else
                     {
-                        try
+                        //only one page not an array of pages
+                        //we should talk to ui about how they pass their json object this is ineffcient.
+                        //two seperate db queries
+                        //do i really need to check if the language and page already exist since im updating the whole book?
+                        IQueryable<Book> bookQuerySingle = client.CreateDocumentQuery<Book>(UriFactory.CreateDocumentCollectionUri(database, collection),
+                        "SELECT a.id, a.title, a.description, a.author, a.pages FROM Books a WHERE a.id = \'" + bookid + "\' AND a.pages.number = \'"
+                         + pageid + "\' AND a.pages.languages.language = \'" + languagecode + "\'",
+                        queryOptions);
+                        if (returnsValue<Book>(bookQuerySingle))
                         {
-                            //create document
-                            await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), book);
-                            return (ActionResult)new OkObjectResult("Language successfully added for page.");
+                            //return conflict since book already exists
+                            return (ActionResult)new StatusCodeResult(409);
                         }
-                        catch (Exception ex)
+                        else
                         {
-                            return (ActionResult)new StatusCodeResult(500);
+                            try
+                            {
+                                //create document
+                                await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), book);
+                                return (ActionResult)new OkObjectResult("Language successfully added for page.");
+                            }
+                            catch (Exception ex)
+                            {
+                                return (ActionResult)new StatusCodeResult(500);
+                            }
                         }
                     }
 
@@ -151,7 +179,32 @@ namespace Functions
                     }
                     else
                     {
-                        return (ActionResult)new NotFoundObjectResult(new { message = "Book ID, page ID, or language code not found." });
+                        //only one page not an array of pages
+                        //we should talk to ui about how they pass their json object this is ineffcient.
+                        //two seperate db queries
+                        //do i really need to check if the language and page already exist since im updating the whole book?
+                        IQueryable<Book> bookQuerySingle = client.CreateDocumentQuery<Book>(UriFactory.CreateDocumentCollectionUri(database, collection),
+                        "SELECT a.id, a.title, a.description, a.author, a.pages FROM Books a WHERE a.id = \'" + bookid + "\' AND a.pages.number = \'"
+                         + pageid + "\' AND a.pages.languages.language = \'" + languagecode + "\'",
+                        queryOptions);
+                        if (returnsValue<Book>(bookQuerySingle))
+                        {
+                            try
+                            {
+                                //update document in db
+                                await client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), book);
+                                return (ActionResult)new OkObjectResult("Page language successfully updated.");
+                            }
+                            catch (Exception ex)
+                            {
+                                return (ActionResult)new StatusCodeResult(500);
+                            }
+                        }
+                        else
+                        {
+
+                            return (ActionResult)new NotFoundObjectResult(new { message = "Book ID, page ID, or language code not found." });
+                        }
                     }
 
                 }

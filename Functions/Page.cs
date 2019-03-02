@@ -18,5 +18,6 @@ namespace Functions
         [JsonConverter(typeof(StringConverter<Language>))]
         [JsonProperty(PropertyName = "languages")]
         public List<Language> Languages { get; set; }
+      
     }
 }
