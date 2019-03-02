@@ -12,6 +12,8 @@ using System.Net.Http;
 using System.Net;
 using Microsoft.Azure.Documents;
 using System.Linq;
+using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
 
 namespace Functions
 {
@@ -30,9 +32,10 @@ namespace Functions
             DocumentClient client = new DocumentClient(new Uri(cosmosURI), cosmosKey);
            
 
-            //pass in the query parameters as such
-            string bookTitle = req.Query["bookTitle"];
+            //pass in the query parameters as such EX: "?title=Snow White&page="
+            string bookTitle = req.Query["title"];
             string page = req.Query["page"];
+            string lang = req.Query["lang"];
 
 
             // Set some common query options
@@ -43,18 +46,39 @@ namespace Functions
                  UriFactory.CreateDocumentCollectionUri("MerryFairyTalesDB", "Books"), queryOptions)
                  .Where(f => f.Title == bookTitle);
 
-            string b = "";
-            // Go through the objects and collect the data.
-            foreach (Book book in bookQuery)
+            Book bookFromObject = new Book();
+            // Go through the object and collect the data.
+            foreach (Book b in bookQuery)
             {
-                Console.WriteLine("\tRead {0}", book);
-                b = book.ToString();
-
+                //Console.WriteLine(b);
+                bookFromObject.Title = b.Title;
+                bookFromObject.Cover_Image = b.Cover_Image;
+                bookFromObject.Author = b.Author;
+                bookFromObject.Description = b.Description;
+                bookFromObject.Id = b.Id;
+                bookFromObject.Pages = b.Pages;
             }
 
-            return bookTitle != null
-                ? (ActionResult)new OkObjectResult($"Hello, {b}")
-                : new BadRequestObjectResult("Please pass a name on the query string or in the request body");
+            if (bookFromObject != null)
+            {
+                string pages = JsonConvert.SerializeObject(bookFromObject.Pages, Formatting.Indented);
+                return (ActionResult)new OkObjectResult(pages);
+                //log.LogInformation(JsonConvert.SerializeObject(bookFromObject.Pages, Formatting.Indented));
+            }
+            else
+            {
+                return (ActionResult)new OkObjectResult("NO BOOK FOUND");
+            }
+
+
+            // if set, display results,
+            // else, return not found HttpResponse
+
+
+
+            //return bookTitle != null
+                //? (ActionResult)new OkObjectResult(bookTitle)
+                //: new BadRequestObjectResult("Please pass a name on the query string or in the request body");
         }
     }
 }
