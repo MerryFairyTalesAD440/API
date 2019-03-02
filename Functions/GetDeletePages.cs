@@ -27,7 +27,7 @@ namespace Functions
         
             string cosmosURI = System.Environment.GetEnvironmentVariable("CosmosURI");
             string cosmosKey = System.Environment.GetEnvironmentVariable("CosmosKey");
-
+            int pagenumber = Convert.ToInt32(pagenum);
 
             DocumentClient client = new DocumentClient(new Uri(cosmosURI), cosmosKey);
 
@@ -38,7 +38,6 @@ namespace Functions
             IQueryable<Book> bookQuery = client.CreateDocumentQuery<Book>(UriFactory.CreateDocumentCollectionUri("MerryFairyTalesDB", "Books"),
                   "SELECT a.id, a.title, a.description, a.author, a.pages FROM Books a JOIN b IN a.pages JOIN c IN b.languages  WHERE a.id = \'" + bookid + "\'",
                   queryOptions);
-
 
             // Set some common query options
             //FeedOptions queryOptions = new FeedOptions { MaxItemCount = -1 };
@@ -52,7 +51,6 @@ namespace Functions
             // Go through the object and collect the data.
             foreach (Book b in bookQuery)
             {
-                Console.WriteLine(b);
                 bookFromObject.Title = b.Title;
                 bookFromObject.Cover_Image = b.Cover_Image;
                 bookFromObject.Author = b.Author;
@@ -60,21 +58,26 @@ namespace Functions
                 bookFromObject.Id = b.Id;
                 bookFromObject.Pages = b.Pages;
             }
+            //if the pages is more or less than the given pages return error
+            if (pagenumber < 1 || pagenumber > bookFromObject.Pages.Count())
+            {
+                return new BadRequestObjectResult("Not Found!!");
+            }
 
-            if (bookFromObject != null)
+            if (bookFromObject.Id != null)
             {
                 //the Pages[] is indexed from 0 and the pages start at 1, so I minus one to counter it
-                string pages = JsonConvert.SerializeObject(bookFromObject.Pages[Convert.ToInt32(pagenum) - 1], Formatting.Indented);
+                string pages = JsonConvert.SerializeObject(bookFromObject.Pages[pagenumber - 1], Formatting.Indented);
                 return (ActionResult)new OkObjectResult(pages);
                 //log.LogInformation(JsonConvert.SerializeObject(bookFromObject.Pages, Formatting.Indented));
             }
             else
             {
-                return (ActionResult)new OkObjectResult("NO BOOK FOUND");
+                return new BadRequestObjectResult("Not Found!!");
             }
 
 
-            //TODO: Right now a null return null. Also, update keys to publish to Azure. but everything else is working great.
+            //TODO: update keys in Azure.
         }
     }
 }

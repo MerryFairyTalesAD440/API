@@ -27,7 +27,7 @@ namespace Functions
 
             string cosmosURI = System.Environment.GetEnvironmentVariable("CosmosURI");
             string cosmosKey = System.Environment.GetEnvironmentVariable("CosmosKey");
-
+            int pagenumber = Convert.ToInt32(pagenum);
 
             DocumentClient client = new DocumentClient(new Uri(cosmosURI), cosmosKey);
 
@@ -39,30 +39,18 @@ namespace Functions
                   "SELECT a.id, a.title, a.description, a.author, a.pages FROM Books a JOIN b IN a.pages JOIN c IN b.languages  WHERE a.id = \'" + bookid + "\'",
                   queryOptions);
 
-
             // Set some common query options
             //FeedOptions queryOptions = new FeedOptions { MaxItemCount = -1 };
 
             //IQueryable<Book> bookQuery = client.CreateDocumentQuery<Book>(
             //UriFactory.CreateDocumentCollectionUri("MerryFairyTalesDB", "Books"), queryOptions)
             //.Where(f => f.Title == bookid);
-
-            int codeToInt = 0;
-            if (code.ToLower() == "en-us")
-            {
-                codeToInt = 0;
-            } else if (code.ToLower() == "fr-fr")
-            {
-                codeToInt = 1;
-            }
-
-
+             
 
             Book bookFromObject = new Book();
             // Go through the object and collect the data.
             foreach (Book b in bookQuery)
             {
-                Console.WriteLine(b);
                 bookFromObject.Title = b.Title;
                 bookFromObject.Cover_Image = b.Cover_Image;
                 bookFromObject.Author = b.Author;
@@ -71,30 +59,49 @@ namespace Functions
                 bookFromObject.Pages = b.Pages;
             }
 
-            if (bookFromObject != null)
+            // no matching page number
+            if (pagenumber < 1 || pagenumber > bookFromObject.Pages.Count())
             {
+                return new BadRequestObjectResult("Not Found!!");
+            }
+
+            //length of the json languahe array
+            int len = bookFromObject.Pages[pagenumber - 1].Languages.Count();
+            int idxOfLangCode = -1;
+
+            //search for the index of the language
+            for (int i = 0; i < len; i++)
+            {
+                // if they match, save the index
+                if (bookFromObject.Pages[pagenumber - 1].Languages[i].language.ToLower().Equals(code)) 
+                {
+                    idxOfLangCode = i;
+                    break;
+                }
+
+            }
+
+            //no matching language
+            if (idxOfLangCode == -1)
+            {
+                return new BadRequestObjectResult("Not Found!!");
+            }
 
 
-
+            if (bookFromObject.Title != null)
+            {
                 //the Pages[] is indexed from 0 and the pages start at 1, so I minus one to counter it
-                string pages = JsonConvert.SerializeObject(bookFromObject.Pages[Convert.ToInt32(pagenum) - 1].Languages[codeToInt], Formatting.Indented);
+                string pages = JsonConvert.SerializeObject(bookFromObject.Pages[pagenumber - 1].Languages[idxOfLangCode], Formatting.Indented);
                 return (ActionResult)new OkObjectResult(pages);
                 //log.LogInformation(JsonConvert.SerializeObject(bookFromObject.Pages, Formatting.Indented));
             }
             else
             {
-                return (ActionResult)new OkObjectResult("NO BOOK FOUND");
+                return new BadRequestObjectResult("Not Found!!");
             }
 
 
-            // if set, display results,
-            // else, return not found HttpResponse
-
-
-
-            //return bookTitle != null
-            //? (ActionResult)new OkObjectResult(bookTitle)
-            //: new BadRequestObjectResult("Please pass a name on the query string or in the request body");
+            //TODO: update keys in Azure.
         }
     }
 }
