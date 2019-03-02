@@ -21,7 +21,7 @@ namespace Functions
     {
         [FunctionName("GetDeletePagesAndLanguages")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)] HttpRequest req, ILogger log, ExecutionContext context)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "books/{bookid}/pages/")] HttpRequest req, string bookid,  ILogger log, ExecutionContext context)
         {
             log.LogInformation("----- function to get the pages and languages from a book");
         
@@ -30,29 +30,31 @@ namespace Functions
 
 
             DocumentClient client = new DocumentClient(new Uri(cosmosURI), cosmosKey);
-           
 
-            //pass in the query parameters as such EX: "?title=Snow White&page="
-            string bookTitle = req.Query["title"];
-            string page = req.Query["page"];
-            string lang = req.Query["lang"];
+
+            FeedOptions queryOptions = new FeedOptions { EnableCrossPartitionQuery = true };
+
+
+            IQueryable<Book> bookQuery = client.CreateDocumentQuery<Book>(UriFactory.CreateDocumentCollectionUri("MerryFairyTalesDB", "Books"),
+                  "SELECT a.id, a.title, a.description, a.author, a.pages FROM Books a JOIN b IN a.pages JOIN c IN b.languages  WHERE a.id = \'" + bookid + "\'",
+                  queryOptions);
 
 
             // Set some common query options
-            FeedOptions queryOptions = new FeedOptions { MaxItemCount = -1 };
+            //FeedOptions queryOptions = new FeedOptions { MaxItemCount = -1 };
 
+            //IQueryable<Book> bookQuery = client.CreateDocumentQuery<Book>(
+            //UriFactory.CreateDocumentCollectionUri("MerryFairyTalesDB", "Books"), queryOptions)
+            //.Where(f => f.Title == bookid);
 
-            IQueryable<Book> bookQuery = client.CreateDocumentQuery<Book>(
-                 UriFactory.CreateDocumentCollectionUri("MerryFairyTalesDB", "Books"), queryOptions)
-                 .Where(f => f.Title == bookTitle);
 
             Book bookFromObject = new Book();
             // Go through the object and collect the data.
             foreach (Book b in bookQuery)
             {
-                //Console.WriteLine(b);
+                Console.WriteLine(b);
                 bookFromObject.Title = b.Title;
-                bookFromObject.Cover_Image = b.Cover_Image;
+                //bookFromObject.Cover_Image = b.Cover_Image;
                 bookFromObject.Author = b.Author;
                 bookFromObject.Description = b.Description;
                 bookFromObject.Id = b.Id;
