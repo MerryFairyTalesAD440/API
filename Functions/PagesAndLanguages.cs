@@ -52,8 +52,8 @@ namespace Functions
                         .AddEnvironmentVariables()
                         .Build();
             //TODO: Get data from post/put rather than reading json from a file
-            dynamic data = JsonConvert.DeserializeObject(System.IO.File.ReadAllText(@"C:\Users\mvien\desktop\sample.json"));
-            //dynamic data = JsonConvert.DeserializeObject(requestBody);
+            //dynamic data = JsonConvert.DeserializeObject(System.IO.File.ReadAllText(@"C:\Users\mvien\desktop\sample.json"));
+            dynamic data = JsonConvert.DeserializeObject(requestBody);
             //TODO: Make sure all return paths from the swagger document are impletmented
             //validate json
             if (validDocument(data))
