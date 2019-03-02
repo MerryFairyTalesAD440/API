@@ -17,14 +17,14 @@ using System.Collections.Generic;
 
 namespace Functions
 {
-    public static class GetDeletePagesAndLanguages
+    public static class GetDeleteLanguages
     {
-        [FunctionName("GetDeletePagesAndLanguages")]
+        [FunctionName("GetDeleteLanguages")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "books/{bookid}/pages/")] HttpRequest req, string bookid,  ILogger log, ExecutionContext context)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "books/{bookid}/pages/{pagenum}/languages/{code}")] HttpRequest req, string bookid, string pagenum, string code, ILogger log, ExecutionContext context)
         {
             log.LogInformation("----- function to get the pages and languages from a book");
-        
+
             string cosmosURI = System.Environment.GetEnvironmentVariable("CosmosURI");
             string cosmosKey = System.Environment.GetEnvironmentVariable("CosmosKey");
 
@@ -47,6 +47,16 @@ namespace Functions
             //UriFactory.CreateDocumentCollectionUri("MerryFairyTalesDB", "Books"), queryOptions)
             //.Where(f => f.Title == bookid);
 
+            int codeToInt = 0;
+            if (code.ToLower() == "en-us")
+            {
+                codeToInt = 0;
+            } else if (code.ToLower() == "fr-fr")
+            {
+                codeToInt = 1;
+            }
+
+
 
             Book bookFromObject = new Book();
             // Go through the object and collect the data.
@@ -54,7 +64,7 @@ namespace Functions
             {
                 Console.WriteLine(b);
                 bookFromObject.Title = b.Title;
-                //bookFromObject.Cover_Image = b.Cover_Image;
+                bookFromObject.Cover_Image = b.Cover_Image;
                 bookFromObject.Author = b.Author;
                 bookFromObject.Description = b.Description;
                 bookFromObject.Id = b.Id;
@@ -63,7 +73,11 @@ namespace Functions
 
             if (bookFromObject != null)
             {
-                string pages = JsonConvert.SerializeObject(bookFromObject.Pages, Formatting.Indented);
+
+
+
+                //the Pages[] is indexed from 0 and the pages start at 1, so I minus one to counter it
+                string pages = JsonConvert.SerializeObject(bookFromObject.Pages[Convert.ToInt32(pagenum) - 1].Languages[codeToInt], Formatting.Indented);
                 return (ActionResult)new OkObjectResult(pages);
                 //log.LogInformation(JsonConvert.SerializeObject(bookFromObject.Pages, Formatting.Indented));
             }
@@ -79,8 +93,8 @@ namespace Functions
 
 
             //return bookTitle != null
-                //? (ActionResult)new OkObjectResult(bookTitle)
-                //: new BadRequestObjectResult("Please pass a name on the query string or in the request body");
+            //? (ActionResult)new OkObjectResult(bookTitle)
+            //: new BadRequestObjectResult("Please pass a name on the query string or in the request body");
         }
     }
 }
