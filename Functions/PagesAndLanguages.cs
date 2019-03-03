@@ -28,7 +28,7 @@ namespace Functions
         {
             log.LogInformation("Http function to put/post page and language");
 
-            if (req.Method == HttpMethod.Delete || req.Method == HttpMethod.Get)
+            if (req.Method == HttpMethod.Delete || req.Method == HttpMethod.Post)
             {
                 return (ActionResult)new StatusCodeResult(405);
             }
@@ -50,8 +50,8 @@ namespace Functions
                         .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
                         .AddEnvironmentVariables()
                         .Build();
-            //dynamic data = JsonConvert.DeserializeObject(System.IO.File.ReadAllText(@"C:\Users\mvien\desktop\sample.json"));
-            dynamic data = JsonConvert.DeserializeObject(requestBody);
+            dynamic data = JsonConvert.DeserializeObject(System.IO.File.ReadAllText(@"C:\Users\mvien\desktop\sample.json"));
+            //dynamic data = JsonConvert.DeserializeObject(requestBody);
             //TODO: Make sure all return paths from the swagger document are impletmented
             //validate json
             if (validDocument(data))
@@ -110,33 +110,64 @@ namespace Functions
                     List<Page> pages = new List<Page> { data?.pages.ToObject<Page>() };
                     book.Pages = pages;
                 }
-                
+
                 book.Cover_Image = data?.cover_image;
                 book.Description = data?.description;
                 book.Title = data?.title;
 
                 // if post
-                if (req.Method == HttpMethod.Post)
+                if (req.Method == HttpMethod.Get)
                 {
                     //check if book is returned
                     if (returnsValue<Book>(bookQuery))
                     {
-                        //return conflict since book already exists
-                        return (ActionResult)new StatusCodeResult(409);
-                    }
-                    else
-                    {
-                        try
+                        Book bookReturned;
+                        foreach (Book b in bookQuery)
                         {
-                            //create document
-                            await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), book);
-                            return (ActionResult)new OkObjectResult("Language successfully added for page.");
-                        }
-                        catch (Exception ex)
-                        {
-                            return (ActionResult)new StatusCodeResult(500);
+                            //there will be only one
+                            bookReturned = b;
                         }
 
+                        //if the page doesnt exist
+                        if (book.Pages.Find(x => x.Number.Contains(pageid)) == null)
+                        {
+                            //set the page to search
+                            Page p = book.Pages.Find(y => y.Number.Contains(pageid));
+                            //if the language doesnt exist
+                            if (p.Languages.Find(z => z.language.Contains(languagecode)) == null)
+                            {
+                                //create document
+                                await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), book);
+                                return (ActionResult)new OkObjectResult("Language and Page added successfully.");
+                            }
+                        }
+
+                        // if the page exists
+                        else if (book.Pages.Find(x => x.Number.Contains(pageid)) != null)
+                        {
+                            Page p = book.Pages.Find(y => y.Number.Contains(pageid));
+                            //if the language doesnt exist
+                            if (p.Languages.Find(z => z.language.Contains(languagecode)) == null)
+                            {
+                                //create document
+                                await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), book);
+                                return (ActionResult)new OkObjectResult("Language successfully added to page.");
+                            }
+                        }
+
+                        else
+                        {
+                            //else return conflict since book/page/language already exists
+                            return (ActionResult)new StatusCodeResult(409);
+                        }
+
+
+                    }
+                    //the book doesnt exist
+                    else
+                    {
+                        //else return object not found
+                        return (ActionResult)new NotFoundObjectResult(new { message = "Book not found" });
                     }
 
                 }
@@ -147,22 +178,48 @@ namespace Functions
                     //check if book is returned
                     if (returnsValue<Book>(bookQuery))
                     {
-                        try
+                        Book bookReturned;
+                        foreach (Book b in bookQuery)
                         {
-                            //update document in db
-                            await client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), book);
-                            return (ActionResult)new OkObjectResult("Page language successfully updated.");
+                            bookReturned = b;
                         }
-                        catch (Exception ex)
+
+
+                        if (book.Pages.Find(x => x.Number.Contains(pageid)) != null)
                         {
-                            return (ActionResult)new StatusCodeResult(500);
+                            Page p = book.Pages.Find(y => y.Number.Contains(pageid));
+                            if (p.Languages.Find(z => z.language.Contains(languagecode)) != null)
+                            {
+                                try
+                                {
+                                    //update document in db
+                                    await client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), book);
+                                    return (ActionResult)new OkObjectResult("Page language successfully updated.");
+                                }
+                                catch (Exception ex)
+                                {
+                                    return (ActionResult)new StatusCodeResult(500);
+                                }
+                            }
+
+                            else
+                            {
+                                return (ActionResult)new NotFoundObjectResult(new { message = "Page not found" });
+                            }
+
+
                         }
+                        else
+                        {
+                            return (ActionResult)new NotFoundObjectResult(new { message = "Page ID not found" });
+                        }
+
                     }
 
                     else
                     {
 
-                        return (ActionResult)new NotFoundObjectResult(new { message = "Book ID, page ID, or language code not found." });
+                        return (ActionResult)new NotFoundObjectResult(new { message = "Book ID not found." });
                     }
                 }
 
