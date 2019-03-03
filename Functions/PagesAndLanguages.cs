@@ -134,7 +134,7 @@ namespace Functions
                             try
                             {
                                 //create document
-                                await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), book);
+                                await client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), book);
                                 return (ActionResult)new OkObjectResult("Language and Page added successfully.");
                             }
                             catch (Exception ex) {
@@ -152,7 +152,7 @@ namespace Functions
                                 try
                                 {
                                     //create document
-                                    await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), book);
+                                    await client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), book);
                                     return (ActionResult)new OkObjectResult("Language successfully added to page.");
                                 }
                                 catch (Exception ex)
