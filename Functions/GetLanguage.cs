@@ -66,7 +66,8 @@ namespace Functions
             // no matching page number
             if (pagenumber < 1 || pagenumber > bookFromObject.Pages.Count())
             {
-                return new BadRequestObjectResult("Page not found");
+                //return new BadRequestObjectResult("Page not found");
+                return (ActionResult)new StatusCodeResult(400); // Bad input
             }
 
             //length of the json languahe array
@@ -88,7 +89,8 @@ namespace Functions
             //no matching language
             if (idxOfLangCode == -1)
             {
-                return new BadRequestObjectResult("Language not found");
+                //return new BadRequestObjectResult("Language not found");
+                return (ActionResult)new StatusCodeResult(400); // Bad input
             }
 
 
@@ -101,7 +103,8 @@ namespace Functions
             }
             else
             {
-                return new BadRequestObjectResult("Book not found");
+                //return new BadRequestObjectResult("Book not found");
+                return (ActionResult)new StatusCodeResult(404); // resource not found
             }
 
 

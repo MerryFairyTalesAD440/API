@@ -36,7 +36,11 @@ namespace Functions
 
 
             IQueryable<Book> bookQuery = client.CreateDocumentQuery<Book>(UriFactory.CreateDocumentCollectionUri("MerryFairyTalesDB", "Books"),
-                  "SELECT a.id, a.title, a.description, a.author, a.pages FROM Books a JOIN b IN a.pages JOIN c IN b.languages  WHERE a.id = \'" + bookid + "\'",
+                  "SELECT a.id, a.title, a.description, a.author, a.pages " +
+                  "FROM Books a " +
+                  "JOIN b IN a.pages " +
+                  "JOIN c IN b.languages " +
+                  "WHERE a.id = \'" + bookid + "\'",
                   queryOptions);
 
             // Set some common query options
