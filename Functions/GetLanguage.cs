@@ -19,12 +19,13 @@ namespace Functions
 {
     public static class GetDeleteLanguages
     {
-        [FunctionName("GetDeleteLanguages")]
+        [FunctionName("GetLanguages")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "books/{bookid}/pages/{pagenum}/languages/{code}")] HttpRequest req, string bookid, string pagenum, string code, ILogger log, ExecutionContext context)
         {
-            log.LogInformation("----- function to get the pages and languages from a book");
+            log.LogInformation("----- function GetLanguage from a book was executed");
 
+            //TODO: change this to read from Azure
             string cosmosURI = System.Environment.GetEnvironmentVariable("CosmosURI");
             string cosmosKey = System.Environment.GetEnvironmentVariable("CosmosKey");
             int pagenumber = Convert.ToInt32(pagenum);
@@ -34,7 +35,7 @@ namespace Functions
 
             FeedOptions queryOptions = new FeedOptions { EnableCrossPartitionQuery = true };
 
-
+            //TODO: get this to read from local.settings.json and Azure settings
             IQueryable<Book> bookQuery = client.CreateDocumentQuery<Book>(UriFactory.CreateDocumentCollectionUri("MerryFairyTalesDB", "Books"),
                   "SELECT a.id, a.title, a.description, a.author, a.pages " +
                   "FROM Books a " +
@@ -93,7 +94,6 @@ namespace Functions
                 return (ActionResult)new StatusCodeResult(400); // Bad input
             }
 
-
             if (bookFromObject.Title != null)
             {
                 //the Pages[] is indexed from 0 and the pages start at 1, so I minus one to counter it
@@ -106,9 +106,6 @@ namespace Functions
                 //return new BadRequestObjectResult("Book not found");
                 return (ActionResult)new StatusCodeResult(404); // resource not found
             }
-
-
-            //TODO: update keys in Azure.
         }
     }
 }

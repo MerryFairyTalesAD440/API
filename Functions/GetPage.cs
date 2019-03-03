@@ -19,7 +19,7 @@ namespace Functions
 {
     public static class GetDeletePagesAndLanguages
     {
-        [FunctionName("GetDeletePages")]
+        [FunctionName("GetPages")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "books/{bookid}/pages/{pagenum}/")] HttpRequest req, string bookid, string pagenum, ILogger log, ExecutionContext context)
         {
@@ -65,7 +65,8 @@ namespace Functions
             //if the pages is more or less than the given pages return error
             if (pagenumber < 1 || pagenumber > bookFromObject.Pages.Count())
             {
-                return new BadRequestObjectResult("Page not found");
+                //return new BadRequestObjectResult("Page not found");
+                return (ActionResult) new StatusCodeResult(400); // Bad input
             }
 
             if (bookFromObject.Id != null)
@@ -77,7 +78,8 @@ namespace Functions
             }
             else
             {
-                return new BadRequestObjectResult("Book not found");
+                //return new BadRequestObjectResult("Book not found");
+                return (ActionResult)new StatusCodeResult(404); // resource not found
             }
 
 
