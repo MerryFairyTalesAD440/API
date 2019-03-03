@@ -40,7 +40,7 @@ namespace Functions
         {
             try
             {
-                log.LogInformation("Http function to put/post text");
+                log.LogInformation("Http function to put/post texturl");
 
                 //get POST body
                 string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
@@ -48,13 +48,11 @@ namespace Functions
                 log.LogInformation($"data -> {data}");
 
                 //get environment variables
-                /*
                 var config = new ConfigurationBuilder()
                         .SetBasePath(context.FunctionAppDirectory)
                         .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
                         .AddEnvironmentVariables()
                         .Build();
-                */
 
                 //access azure keyvault
                 var serviceTokenProvider = new AzureServiceTokenProvider();
@@ -70,10 +68,10 @@ namespace Functions
 
                 try
                 {
-                    SecretBundle secretURI = await keyVaultClient.GetSecretAsync("https://francesco-key-vault.vault.azure.net/secrets/cosmos-uri/");
-                    SecretBundle secretKey = await keyVaultClient.GetSecretAsync("https://francesco-key-vault.vault.azure.net/secrets/cosmos-key/");
-                    SecretBundle secretDB = await keyVaultClient.GetSecretAsync("https://francesco-key-vault.vault.azure.net/secrets/cosmos-db-name/");
-                    SecretBundle secretTable = await keyVaultClient.GetSecretAsync("https://francesco-key-vault.vault.azure.net/secrets/cosmos-table/");
+                    SecretBundle secretURI = await keyVaultClient.GetSecretAsync($"{config["KeyVaultUri"]}secrets/cosmos-uri/");
+                    SecretBundle secretKey = await keyVaultClient.GetSecretAsync($"{config["KeyVaultUri"]}secrets/cosmos-key/");
+                    SecretBundle secretDB = await keyVaultClient.GetSecretAsync($"{config["KeyVaultUri"]}secrets/cosmos-db-name/");
+                    SecretBundle secretTable = await keyVaultClient.GetSecretAsync($"{config["KeyVaultUri"]}secrets/cosmos-table/");
 
                     uri = secretURI.Value;
                     key = secretKey.Value;
@@ -116,117 +114,6 @@ namespace Functions
             {
                 return (ActionResult)new BadRequestObjectResult("400");
             }
-        }
-    }
-
-    public class Book
-    {
-        [JsonProperty(PropertyName = "id")]
-        public String Id { get; set; }
-
-        [JsonProperty(PropertyName = "description")]
-        public String Description { get; set; }
-
-        [JsonProperty(PropertyName = "author")]
-        public String Author { get; set; }
-
-        [JsonProperty(PropertyName = "cover_image")]
-        public String Cover_Image { get; set; }
-
-        [JsonProperty(PropertyName = "title")]
-        public String Title { get; set; }
-
-        [JsonConverter(typeof(StringConverter<Page>))]
-        [JsonProperty(PropertyName = "pages")]
-        public List<Page> Pages { get; set; }
-
-        public override string ToString()
-        {
-            return JsonConvert.SerializeObject(this, Formatting.Indented);
-        }
-    }
-
-    [JsonObject]
-    public class Page
-    {
-        [JsonProperty(PropertyName = "number")]
-        public string Number { get; set; }
-
-        [JsonProperty(PropertyName = "image_url")]
-        public string Image_Url { get; set; }
-
-        [JsonConverter(typeof(StringConverter<Language>))]
-        [JsonProperty(PropertyName = "languages")]
-        public List<Language> Languages { get; set; }
-
-    }
-
-    [JsonObject]
-    public class Language
-    {
-        [JsonProperty(PropertyName = "language")]
-        public string language { get; set; }
-
-        [JsonProperty(PropertyName = "text_url")]
-        public string Text_Url { get; set; }
-
-        [JsonProperty(PropertyName = "audio_url")]
-        public string Audio_Url { get; set; }
-
-    }
-
-    public class StringConverter<T> : JsonConverter
-    {
-        /// <summary>
-        /// Checks type
-        /// </summary>
-        /// <param name="objectType"></param>
-        /// <returns></returns>
-        public override bool CanConvert(Type objectType)
-        {
-            return (objectType == typeof(List<T>));
-        }
-
-        /// <summary>
-        /// Reads and converts object if of not an array
-        /// </summary>
-        /// <param name="reader"></param>
-        /// <param name="objectType"></param>
-        /// <param name="existingValue"></param>
-        /// <param name="serializer"></param>
-        /// <returns></returns>
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-        {
-            JToken token = JToken.Load(reader);
-            if (token.Type == JTokenType.Array)
-            {
-                return token.ToObject<List<T>>();
-            }
-            return new List<T> { token.ToObject<T>() };
-        }
-
-        /// <summary>
-        /// Writes object
-        /// </summary>
-        /// <param name="writer"></param>
-        /// <param name="value"></param>
-        /// <param name="serializer"></param>
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
-        {
-            List<T> list = (List<T>)value;
-            if (list.Count == 1)
-            {
-                value = list[0];
-            }
-            serializer.Serialize(writer, value);
-        }
-
-        /// <summary>
-        /// Can get object
-        /// </summary>
-        public override bool CanWrite
-        {
-            get { return true; }
         }
     }
 }
