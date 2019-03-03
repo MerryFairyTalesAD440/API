@@ -17,14 +17,14 @@ using System.Collections.Generic;
 
 namespace Functions
 {
-    public static class GetDeleteLanguages
+    public static class GetDeletePagesAndLanguages
     {
-        [FunctionName("GetDeleteLanguages")]
+        [FunctionName("GetDeletePages")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "books/{bookid}/pages/{pagenum}/languages/{code}")] HttpRequest req, string bookid, string pagenum, string code, ILogger log, ExecutionContext context)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "books/{bookid}/pages/{pagenum}/")] HttpRequest req, string bookid, string pagenum, ILogger log, ExecutionContext context)
         {
             log.LogInformation("----- function to get the pages and languages from a book");
-
+        
             string cosmosURI = System.Environment.GetEnvironmentVariable("CosmosURI");
             string cosmosKey = System.Environment.GetEnvironmentVariable("CosmosKey");
             int pagenumber = Convert.ToInt32(pagenum);
@@ -45,7 +45,7 @@ namespace Functions
             //IQueryable<Book> bookQuery = client.CreateDocumentQuery<Book>(
             //UriFactory.CreateDocumentCollectionUri("MerryFairyTalesDB", "Books"), queryOptions)
             //.Where(f => f.Title == bookid);
-             
+
 
             Book bookFromObject = new Book();
             // Go through the object and collect the data.
@@ -58,46 +58,22 @@ namespace Functions
                 bookFromObject.Id = b.Id;
                 bookFromObject.Pages = b.Pages;
             }
-
-            // no matching page number
+            //if the pages is more or less than the given pages return error
             if (pagenumber < 1 || pagenumber > bookFromObject.Pages.Count())
             {
-                return new BadRequestObjectResult("Not Found!!");
+                return new BadRequestObjectResult("Page not found");
             }
 
-            //length of the json languahe array
-            int len = bookFromObject.Pages[pagenumber - 1].Languages.Count();
-            int idxOfLangCode = -1;
-
-            //search for the index of the language
-            for (int i = 0; i < len; i++)
-            {
-                // if they match, save the index
-                if (bookFromObject.Pages[pagenumber - 1].Languages[i].language.ToLower().Equals(code)) 
-                {
-                    idxOfLangCode = i;
-                    break;
-                }
-
-            }
-
-            //no matching language
-            if (idxOfLangCode == -1)
-            {
-                return new BadRequestObjectResult("Not Found!!");
-            }
-
-
-            if (bookFromObject.Title != null)
+            if (bookFromObject.Id != null)
             {
                 //the Pages[] is indexed from 0 and the pages start at 1, so I minus one to counter it
-                string pages = JsonConvert.SerializeObject(bookFromObject.Pages[pagenumber - 1].Languages[idxOfLangCode], Formatting.Indented);
+                string pages = JsonConvert.SerializeObject(bookFromObject.Pages[pagenumber - 1], Formatting.Indented);
                 return (ActionResult)new OkObjectResult(pages);
                 //log.LogInformation(JsonConvert.SerializeObject(bookFromObject.Pages, Formatting.Indented));
             }
             else
             {
-                return new BadRequestObjectResult("Not Found!!");
+                return new BadRequestObjectResult("Book not found");
             }
 
 
