@@ -131,14 +131,14 @@ namespace Functions
                         //if the page doesnt exist
                         if (book.Pages.Find(x => x.Number.Contains(pageid)) == null)
                         {
-                            //set the page to search
-                            Page p = book.Pages.Find(y => y.Number.Contains(pageid));
-                            //if the language doesnt exist
-                            if (p.Languages.Find(z => z.language.Contains(languagecode)) == null)
+                            try
                             {
                                 //create document
                                 await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), book);
                                 return (ActionResult)new OkObjectResult("Language and Page added successfully.");
+                            }
+                            catch (Exception ex) {
+                                return (ActionResult)new StatusCodeResult(500);
                             }
                         }
 
@@ -149,9 +149,17 @@ namespace Functions
                             //if the language doesnt exist
                             if (p.Languages.Find(z => z.language.Contains(languagecode)) == null)
                             {
-                                //create document
-                                await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), book);
-                                return (ActionResult)new OkObjectResult("Language successfully added to page.");
+                                try
+                                {
+                                    //create document
+                                    await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), book);
+                                    return (ActionResult)new OkObjectResult("Language successfully added to page.");
+                                }
+                                catch (Exception ex)
+                                {
+                                    return (ActionResult)new StatusCodeResult(500);
+                                }
+
                             }
                         }
 
@@ -160,8 +168,6 @@ namespace Functions
                             //else return conflict since book/page/language already exists
                             return (ActionResult)new StatusCodeResult(409);
                         }
-
-
                     }
                     //the book doesnt exist
                     else
@@ -183,8 +189,6 @@ namespace Functions
                         {
                             bookReturned = b;
                         }
-
-
                         if (book.Pages.Find(x => x.Number.Contains(pageid)) != null)
                         {
                             Page p = book.Pages.Find(y => y.Number.Contains(pageid));
@@ -207,7 +211,6 @@ namespace Functions
                                 return (ActionResult)new NotFoundObjectResult(new { message = "Page not found" });
                             }
 
-
                         }
                         else
                         {
@@ -222,8 +225,6 @@ namespace Functions
                         return (ActionResult)new NotFoundObjectResult(new { message = "Book ID not found." });
                     }
                 }
-
-
                 else
                 {
                     return (ActionResult)new StatusCodeResult(405);
@@ -233,8 +234,6 @@ namespace Functions
             {
                 return (ActionResult)new BadRequestObjectResult("Json sent in wrong format or without the required information!");
             }
-
-
         }
 
         // TODO:  validate path variables and book contents match 
