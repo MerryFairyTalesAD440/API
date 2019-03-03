@@ -24,19 +24,18 @@ namespace Functions
         [Consumes("application/json")]
         [Produces("application/json")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous,"put", "post", "delete", "get", Route = "books/{bookid}/pages/{pageid}/language/{languagecode}")] HttpRequestMessage req, ILogger log, string bookid, string pageid, string languagecode, ExecutionContext context)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "put", "post", "delete", "get", Route = "books/{bookid}/pages/{pageid}/language/{languagecode}")] HttpRequestMessage req, ILogger log, string bookid, string pageid, string languagecode, ExecutionContext context)
         {
             log.LogInformation("Http function to put/post page and language");
-        
-            if (req.Method == HttpMethod.Delete || req.Method == HttpMethod.Post)
+
+            if (req.Method == HttpMethod.Delete || req.Method == HttpMethod.Get)
             {
                 return (ActionResult)new StatusCodeResult(405);
             }
-           
 
             string requestBody = await req.Content.ReadAsStringAsync();
             //declare client
-            DocumentClient client;          
+            DocumentClient client;
             //not fool proof but will work for now
             bookid = bookid.Replace(" ", "");
             pageid = pageid.Replace(" ", "");
@@ -51,7 +50,6 @@ namespace Functions
                         .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
                         .AddEnvironmentVariables()
                         .Build();
-            //TODO: Get data from post/put rather than reading json from a file
             //dynamic data = JsonConvert.DeserializeObject(System.IO.File.ReadAllText(@"C:\Users\mvien\desktop\sample.json"));
             dynamic data = JsonConvert.DeserializeObject(requestBody);
             //TODO: Make sure all return paths from the swagger document are impletmented
@@ -61,7 +59,7 @@ namespace Functions
                 //apply for key vault client
                 var serviceTokenProvider = new AzureServiceTokenProvider();
                 var keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(serviceTokenProvider.KeyVaultTokenCallback));
-               
+
                 //storage variables for secrets
                 SecretBundle secrets;
                 String uri = String.Empty;
@@ -81,7 +79,7 @@ namespace Functions
                     database = (string)details["COSMOS_DB"];
                     collection = (string)details["COSMOS_COLLECTION"];
                 }
-           
+
                 //display unauthorize error.  Im not sure which code to return for this catch
                 catch (KeyVaultErrorException ex)
                 {
@@ -91,13 +89,10 @@ namespace Functions
                 //set options client and query
                 FeedOptions queryOptions = new FeedOptions { EnableCrossPartitionQuery = true };
                 client = new DocumentClient(new Uri(uri), key);
-             
-                //comos sql is a little different
+
+                //set book query.  search for book id
                 IQueryable<Book> bookQuery = client.CreateDocumentQuery<Book>(UriFactory.CreateDocumentCollectionUri(database, collection),
-                  "SELECT a.id, a.title, a.description, a.author, a.pages FROM Books a JOIN b IN a.pages JOIN c IN b.languages  WHERE a.id = \'" + bookid + "\' AND b.number = \'"
-                  + pageid + "\' AND c.language = \'" + languagecode + "\'",
-                  queryOptions);
-              
+                  "SELECT a.id, a.title, a.description, a.author, a.pages FROM Books a  WHERE a.id = \'" + bookid + "\'", queryOptions);
                 //set book
                 Book book = new Book();
                 book.Author = data?.author;
@@ -108,17 +103,18 @@ namespace Functions
                     book.Pages = data?.pages.ToObject<List<Page>>();
                 }
                 //if a single page
-                catch (Exception ex) {
-                    Page [] page = new Page[1];
+                catch (Exception ex)
+                {
+                    Page[] page = new Page[1];
                     page[0] = data?.pages.ToObject<Page>();
                     List<Page> pages = new List<Page> { data?.pages.ToObject<Page>() };
                     book.Pages = pages;
-                } 
-              
+                }
+                
                 book.Cover_Image = data?.cover_image;
                 book.Description = data?.description;
                 book.Title = data?.title;
-              
+
                 // if post
                 if (req.Method == HttpMethod.Post)
                 {
@@ -130,36 +126,21 @@ namespace Functions
                     }
                     else
                     {
-                        //only one page not an array of pages
-                        //we should talk to ui about how they pass their json object this is ineffcient.
-                        //two seperate db queries
-                        //do i really need to check if the language and page already exist since im updating the whole book?
-                        IQueryable<Book> bookQuerySingle = client.CreateDocumentQuery<Book>(UriFactory.CreateDocumentCollectionUri(database, collection),
-                        "SELECT a.id, a.title, a.description, a.author, a.pages FROM Books a WHERE a.id = \'" + bookid + "\' AND a.pages.number = \'"
-                         + pageid + "\' AND a.pages.languages.language = \'" + languagecode + "\'",
-                        queryOptions);
-                        if (returnsValue<Book>(bookQuerySingle))
+                        try
                         {
-                            //return conflict since book already exists
-                            return (ActionResult)new StatusCodeResult(409);
+                            //create document
+                            await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), book);
+                            return (ActionResult)new OkObjectResult("Language successfully added for page.");
                         }
-                        else
+                        catch (Exception ex)
                         {
-                            try
-                            {
-                                //create document
-                                await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), book);
-                                return (ActionResult)new OkObjectResult("Language successfully added for page.");
-                            }
-                            catch (Exception ex)
-                            {
-                                return (ActionResult)new StatusCodeResult(500);
-                            }
+                            return (ActionResult)new StatusCodeResult(500);
                         }
+
                     }
 
                 }
-            
+
                 //if put
                 if (req.Method == HttpMethod.Put)
                 {
@@ -177,38 +158,17 @@ namespace Functions
                             return (ActionResult)new StatusCodeResult(500);
                         }
                     }
+
                     else
                     {
-                        //only one page not an array of pages
-                        //we should talk to ui about how they pass their json object this is ineffcient.
-                        //two seperate db queries
-                        //do i really need to check if the language and page already exist since im updating the whole book?
-                        IQueryable<Book> bookQuerySingle = client.CreateDocumentQuery<Book>(UriFactory.CreateDocumentCollectionUri(database, collection),
-                        "SELECT a.id, a.title, a.description, a.author, a.pages FROM Books a WHERE a.id = \'" + bookid + "\' AND a.pages.number = \'"
-                         + pageid + "\' AND a.pages.languages.language = \'" + languagecode + "\'",
-                        queryOptions);
-                        if (returnsValue<Book>(bookQuerySingle))
-                        {
-                            try
-                            {
-                                //update document in db
-                                await client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), book);
-                                return (ActionResult)new OkObjectResult("Page language successfully updated.");
-                            }
-                            catch (Exception ex)
-                            {
-                                return (ActionResult)new StatusCodeResult(500);
-                            }
-                        }
-                        else
-                        {
 
-                            return (ActionResult)new NotFoundObjectResult(new { message = "Book ID, page ID, or language code not found." });
-                        }
+                        return (ActionResult)new NotFoundObjectResult(new { message = "Book ID, page ID, or language code not found." });
                     }
-
                 }
-                else {
+
+
+                else
+                {
                     return (ActionResult)new StatusCodeResult(405);
                 }
             }
@@ -216,7 +176,7 @@ namespace Functions
             {
                 return (ActionResult)new BadRequestObjectResult("Json sent in wrong format or without the required information!");
             }
-           
+
 
         }
 
@@ -236,7 +196,7 @@ namespace Functions
             }
             return valid;
         }
-      
+
         /// <summary>
         /// Checks if a value has been returned by iqueryable
         /// </summary>
