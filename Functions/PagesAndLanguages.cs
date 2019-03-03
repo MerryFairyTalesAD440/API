@@ -112,9 +112,7 @@ namespace Functions
                 }
                 //if a single page
                 catch (Exception ex)
-                {
-                    Page[] page = new Page[1];
-                    page[0] = data?.pages.ToObject<Page>();
+                {                 
                     List<Page> pages = new List<Page> { data?.pages.ToObject<Page>() };
                     book.Pages = pages;
                 }
