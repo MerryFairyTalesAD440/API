@@ -24,12 +24,8 @@ script:
  - ls
 
 deploy:
- - skip_cleanup: true
  - provider: azure_web_apps
-   site: AZURE_PROD_SITENAME
-   on:
-    branch: master
- - provider: azure_web_apps
+   skip_cleanup: true
    site: AZURE_DEV_SITENAME
    on:
     branch: develop
