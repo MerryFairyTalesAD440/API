@@ -35,7 +35,7 @@ namespace Functions
             bookid = bookid.Replace(" ", "");
             pageid = pageid.Replace(" ", "");
             languagecode = languagecode.Replace(" ", "");
-        
+
             //use configuration builder for variables
             //azure functions does not use configuration manager in .net core 2
             //key vault uri stored in local.settings.json file
@@ -116,6 +116,11 @@ namespace Functions
                 book.Description = data?.description;
                 book.Title = data?.title;
 
+                if (!routeBookMatches(bookid, pageid, languagecode, data))
+                {
+                    return (ActionResult)new BadRequestObjectResult("Route information does not match book!.");
+                }
+
                 // if post
                 if (req.Method == HttpMethod.Post)
                 {
@@ -151,7 +156,8 @@ namespace Functions
                             //else return conflict since book/page/language already exists
                             return (ActionResult)new StatusCodeResult(409);
                         }
-                        else {
+                        else
+                        {
                             return (ActionResult)new NotFoundObjectResult(new { message = "Page ID not found" });
                         }
                     }
@@ -220,7 +226,7 @@ namespace Functions
         /// Checking if the proper information was passed
         /// </summary>
         /// <param name="data"></param>
-        /// <returns></returns>
+        /// <returns>boolean</returns>
         public static bool validDocument(dynamic data)
         {
             bool valid = false;
@@ -237,7 +243,7 @@ namespace Functions
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="enumerable"></param>
-        /// <returns></returns>
+        /// <returns>boolean</returns>
         public static bool returnsValue<T>(this IEnumerable<T> enumerable)
         {
             try
@@ -248,6 +254,49 @@ namespace Functions
             {
                 return false;
             }
+        }
+        /// <summary>
+        /// Makes sure route info matches book.
+        /// </summary>
+        /// <param name="bookid"></param>
+        /// <param name="pageid"></param>
+        /// <param name="languagecode"></param>
+        /// <param name="data"></param>
+        /// <returns>boolean</returns>
+        public static bool routeBookMatches(string bookid, string pageid, string languagecode, dynamic data)
+        {
+            bool result = false;
+            //set book
+            Book book = new Book();
+            book.Author = data?.author;
+            book.Id = data?.id;
+            //if pages are an array
+            try
+            {
+                book.Pages = data?.pages.ToObject<List<Page>>();
+            }
+            //if a single page
+            catch (Exception ex)
+            {
+                List<Page> pages = new List<Page> { data?.pages.ToObject<Page>() };
+                book.Pages = pages;
+            }
+
+            book.Cover_Image = data?.cover_image;
+            book.Description = data?.description;
+            book.Title = data?.title;
+            if (book.Id.CompareTo(bookid) == 0)
+            {
+                if (book.Pages.Find(x => x.Number.Contains(pageid)) != null)
+                {
+                    Page p = book.Pages.Find(y => y.Number.Contains(pageid));
+                    if (p.Languages.Find(z => z.language.Contains(languagecode)) != null)
+                    {
+                        result = true;
+                    }
+                }
+            }
+            return result;
         }
 
     }
