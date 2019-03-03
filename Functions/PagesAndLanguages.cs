@@ -5,7 +5,6 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using MongoDB.Driver;
 using Microsoft.Azure.Documents.Client;
 using System.Linq;
 using System.Net.Http;
@@ -27,12 +26,6 @@ namespace Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "put", "post", "delete", "get", Route = "books/{bookid}/pages/{pageid}/language/{languagecode}")] HttpRequestMessage req, ILogger log, string bookid, string pageid, string languagecode, ExecutionContext context)
         {
             log.LogInformation("Http function to put/post page and language");
-
-            if (req.Method == HttpMethod.Delete || req.Method == HttpMethod.Get)
-            {
-                return (ActionResult)new StatusCodeResult(405);
-            }
-
             string requestBody = await req.Content.ReadAsStringAsync();
             //declare client
             DocumentClient client;
@@ -42,6 +35,7 @@ namespace Functions
             bookid = bookid.Replace(" ", "");
             pageid = pageid.Replace(" ", "");
             languagecode = languagecode.Replace(" ", "");
+        
             //use configuration builder for variables
             //azure functions does not use configuration manager in .net core 2
             //key vault uri stored in local.settings.json file
@@ -52,8 +46,8 @@ namespace Functions
                         .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
                         .AddEnvironmentVariables()
                         .Build();
-            dynamic data = JsonConvert.DeserializeObject(System.IO.File.ReadAllText(@"C:\Users\mvien\desktop\sample.json"));
-            //dynamic data = JsonConvert.DeserializeObject(requestBody);
+            //dynamic data = JsonConvert.DeserializeObject(System.IO.File.ReadAllText(@"C:\Users\mvien\desktop\sample.json"));
+            dynamic data = JsonConvert.DeserializeObject(requestBody);
             //TODO: Make sure all return paths from the swagger document are impletmented
             //validate json
             if (validDocument(data))
@@ -91,14 +85,15 @@ namespace Functions
                 //set options client and query
                 FeedOptions queryOptions = new FeedOptions { EnableCrossPartitionQuery = true };
                 client = new DocumentClient(new Uri(uri), key);
-               
+
                 try
                 {
                     //set book query.  search for book id
                     bookQuery = client.CreateDocumentQuery<Book>(UriFactory.CreateDocumentCollectionUri(database, collection),
                     "SELECT a.id, a.title, a.description, a.author, a.pages FROM Books a  WHERE a.id = \'" + bookid + "\'", queryOptions);
                 }
-                catch (Exception ex){
+                catch (Exception ex)
+                {
                     return (ActionResult)new StatusCodeResult(500);
                 }
                 //set book
@@ -112,7 +107,7 @@ namespace Functions
                 }
                 //if a single page
                 catch (Exception ex)
-                {                 
+                {
                     List<Page> pages = new List<Page> { data?.pages.ToObject<Page>() };
                     book.Pages = pages;
                 }
@@ -127,31 +122,17 @@ namespace Functions
                     //check if book is returned
                     if (returnsValue<Book>(bookQuery))
                     {
-                        Book bookReturned;
+                        Book bookReturned = new Book();
                         foreach (Book b in bookQuery)
                         {
-                            //there will be only one
+
                             bookReturned = b;
                         }
 
-                        //if the page doesnt exist
-                        if (book.Pages.Find(x => x.Number.Contains(pageid)) == null)
-                        {
-                            try
-                            {
-                                //create document
-                                await client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), book);
-                                return (ActionResult)new OkObjectResult("Language and Page added successfully.");
-                            }
-                            catch (Exception ex) {
-                                return (ActionResult)new StatusCodeResult(500);
-                            }
-                        }
-
                         // if the page exists
-                        else if (book.Pages.Find(x => x.Number.Contains(pageid)) != null)
+                        if (bookReturned.Pages.Find(x => x.Number.Contains(pageid)) != null)
                         {
-                            Page p = book.Pages.Find(y => y.Number.Contains(pageid));
+                            Page p = bookReturned.Pages.Find(y => y.Number.Contains(pageid));
                             //if the language doesnt exist
                             if (p.Languages.Find(z => z.language.Contains(languagecode)) == null)
                             {
@@ -159,7 +140,7 @@ namespace Functions
                                 {
                                     //create document
                                     await client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), book);
-                                    return (ActionResult)new OkObjectResult("Language successfully added to page.");
+                                    return (ActionResult)new OkObjectResult("Language successfully added for page.");
                                 }
                                 catch (Exception ex)
                                 {
@@ -167,42 +148,35 @@ namespace Functions
                                 }
 
                             }
-                        }
-
-                        else
-                        {
                             //else return conflict since book/page/language already exists
                             return (ActionResult)new StatusCodeResult(409);
                         }
-                    }
-                    //the book doesnt exist
-                    else
-                    {
-                        //else return object not found
-                        return (ActionResult)new NotFoundObjectResult(new { message = "Book not found" });
+                        else {
+                            return (ActionResult)new NotFoundObjectResult(new { message = "Page ID not found" });
+                        }
                     }
 
                 }
 
                 //if put
-                if (req.Method == HttpMethod.Put)
+                else if (req.Method == HttpMethod.Put)
                 {
                     //check if book is returned
                     if (returnsValue<Book>(bookQuery))
                     {
-                        Book bookReturned;
+                        Book bookReturned = new Book();
                         foreach (Book b in bookQuery)
                         {
                             bookReturned = b;
                         }
-                        if (book.Pages.Find(x => x.Number.Contains(pageid)) != null)
+                        if (bookReturned.Pages.Find(x => x.Number.Contains(pageid)) != null)
                         {
-                            Page p = book.Pages.Find(y => y.Number.Contains(pageid));
+                            Page p = bookReturned.Pages.Find(y => y.Number.Contains(pageid));
                             if (p.Languages.Find(z => z.language.Contains(languagecode)) != null)
                             {
                                 try
                                 {
-                                    //update document in db
+                                    //update document in db if route variables and returned book matches
                                     await client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), book);
                                     return (ActionResult)new OkObjectResult("Page language successfully updated.");
                                 }
@@ -214,7 +188,7 @@ namespace Functions
 
                             else
                             {
-                                return (ActionResult)new NotFoundObjectResult(new { message = "Page not found" });
+                                return (ActionResult)new NotFoundObjectResult(new { message = "Language code not found" });
                             }
 
                         }
@@ -231,14 +205,13 @@ namespace Functions
                         return (ActionResult)new NotFoundObjectResult(new { message = "Book ID not found." });
                     }
                 }
-                else
-                {
-                    return (ActionResult)new StatusCodeResult(405);
-                }
+
+                return (ActionResult)new StatusCodeResult(405);
+
             }
             else
             {
-                return (ActionResult)new BadRequestObjectResult("Json sent in wrong format or without the required information!");
+                return (ActionResult)new BadRequestObjectResult("Could not complete request. Missing or invalid information provided.");
             }
         }
 
