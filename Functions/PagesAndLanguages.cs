@@ -28,7 +28,7 @@ namespace Functions
         {
             log.LogInformation("Http function to put/post page and language");
 
-            if (req.Method == HttpMethod.Delete || req.Method == HttpMethod.Post)
+            if (req.Method == HttpMethod.Delete || req.Method == HttpMethod.Get)
             {
                 return (ActionResult)new StatusCodeResult(405);
             }
@@ -36,6 +36,8 @@ namespace Functions
             string requestBody = await req.Content.ReadAsStringAsync();
             //declare client
             DocumentClient client;
+            //declare query
+            IQueryable<Book> bookQuery;
             //not fool proof but will work for now
             bookid = bookid.Replace(" ", "");
             pageid = pageid.Replace(" ", "");
@@ -89,10 +91,16 @@ namespace Functions
                 //set options client and query
                 FeedOptions queryOptions = new FeedOptions { EnableCrossPartitionQuery = true };
                 client = new DocumentClient(new Uri(uri), key);
-
-                //set book query.  search for book id
-                IQueryable<Book> bookQuery = client.CreateDocumentQuery<Book>(UriFactory.CreateDocumentCollectionUri(database, collection),
-                  "SELECT a.id, a.title, a.description, a.author, a.pages FROM Books a  WHERE a.id = \'" + bookid + "\'", queryOptions);
+               
+                try
+                {
+                    //set book query.  search for book id
+                    bookQuery = client.CreateDocumentQuery<Book>(UriFactory.CreateDocumentCollectionUri(database, collection),
+                    "SELECT a.id, a.title, a.description, a.author, a.pages FROM Books a  WHERE a.id = \'" + bookid + "\'", queryOptions);
+                }
+                catch (Exception ex){
+                    return (ActionResult)new StatusCodeResult(500);
+                }
                 //set book
                 Book book = new Book();
                 book.Author = data?.author;
@@ -116,7 +124,7 @@ namespace Functions
                 book.Title = data?.title;
 
                 // if post
-                if (req.Method == HttpMethod.Get)
+                if (req.Method == HttpMethod.Post)
                 {
                     //check if book is returned
                     if (returnsValue<Book>(bookQuery))
