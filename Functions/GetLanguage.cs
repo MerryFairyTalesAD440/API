@@ -25,53 +25,40 @@ namespace Functions
         {
             log.LogInformation("----- function GetLanguage from a book was executed");
 
+            // convert "pagenumber" to an integer
+            int pagenumber = Convert.ToInt32(pagenum);
+
+            // =====================================================================================================
+            //                                            GET MY VARIABLES 
+            // =====================================================================================================
             //TODO: change this to read from Azure
             string cosmosURI = System.Environment.GetEnvironmentVariable("CosmosURI");
             string cosmosKey = System.Environment.GetEnvironmentVariable("CosmosKey");
-            int pagenumber = Convert.ToInt32(pagenum);
+            string cosmosDBName = System.Environment.GetEnvironmentVariable("CosmosDBName");
+            string cosmosDBCollection = System.Environment.GetEnvironmentVariable("CosmosDBCollection");
 
+            // =====================================================================================================
+            //                                         CONNECT TO COSMOS DB
+            // =====================================================================================================
             DocumentClient client = new DocumentClient(new Uri(cosmosURI), cosmosKey);
-
-
             FeedOptions queryOptions = new FeedOptions { EnableCrossPartitionQuery = true };
+            var collectionLink = UriFactory.CreateDocumentCollectionUri(cosmosDBName, cosmosDBCollection);
+            var query = "SELECT * FROM Books b WHERE b.id = \'" + bookid + "\'";
+            var document = client.CreateDocumentQuery(collectionLink, query, queryOptions).ToList();
+            log.LogInformation(document.Count.ToString());
 
-            //TODO: get this to read from local.settings.json and Azure settings
-            IQueryable<Book> bookQuery = client.CreateDocumentQuery<Book>(UriFactory.CreateDocumentCollectionUri("MerryFairyTalesDB", "Books"),
-                  "SELECT a.id, a.title, a.description, a.author, a.pages " +
-                  "FROM Books a " +
-                  "JOIN b IN a.pages " +
-                  "JOIN c IN b.languages  " +
-                  "WHERE a.id = \'" + bookid + "\'",
-                  queryOptions);
+            // =====================================================================================================
+            //                                              VALIDATION
+            // =====================================================================================================
+            Book bookFromObject = document.ElementAt(0);
 
-            // Set some common query options
-            //FeedOptions queryOptions = new FeedOptions { MaxItemCount = -1 };
+            // resource not found 
+            if (bookFromObject.Id == null) { return (ActionResult)new StatusCodeResult(404); }
 
-            //IQueryable<Book> bookQuery = client.CreateDocumentQuery<Book>(
-            //UriFactory.CreateDocumentCollectionUri("MerryFairyTalesDB", "Books"), queryOptions)
-            //.Where(f => f.Title == bookid);
-             
+            // Bad page input
+            if (pagenumber < 1 || pagenumber > bookFromObject.Pages.Count()) { return (ActionResult)new StatusCodeResult(400); }
 
-            Book bookFromObject = new Book();
-            // Go through the object and collect the data.
-            foreach (Book b in bookQuery)
-            {
-                bookFromObject.Title = b.Title;
-                bookFromObject.Cover_Image = b.Cover_Image;
-                bookFromObject.Author = b.Author;
-                bookFromObject.Description = b.Description;
-                bookFromObject.Id = b.Id;
-                bookFromObject.Pages = b.Pages;
-            }
 
-            // no matching page number
-            if (pagenumber < 1 || pagenumber > bookFromObject.Pages.Count())
-            {
-                //return new BadRequestObjectResult("Page not found");
-                return (ActionResult)new StatusCodeResult(400); // Bad input
-            }
-
-            //length of the json languahe array
             int len = bookFromObject.Pages[pagenumber - 1].Languages.Count();
             int idxOfLangCode = -1;
 
@@ -79,21 +66,18 @@ namespace Functions
             for (int i = 0; i < len; i++)
             {
                 // if they match, save the index
-                if (bookFromObject.Pages[pagenumber - 1].Languages[i].language.ToLower().Equals(code)) 
+                if (bookFromObject.Pages[pagenumber - 1].Languages[i].language.ToLower() == code.ToLower())
                 {
                     idxOfLangCode = i;
                     break;
                 }
-
             }
+            // bad code, no matching language
+            if (idxOfLangCode == -1) { return (ActionResult)new StatusCodeResult(400); }
 
-            //no matching language
-            if (idxOfLangCode == -1)
-            {
-                //return new BadRequestObjectResult("Language not found");
-                return (ActionResult)new StatusCodeResult(400); // Bad input
-            }
-
+            // =====================================================================================================
+            //                                         DISPLAY RESULTS 
+            // =====================================================================================================
             if (bookFromObject.Title != null)
             {
                 //the Pages[] is indexed from 0 and the pages start at 1, so I minus one to counter it
