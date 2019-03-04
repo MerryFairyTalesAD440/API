@@ -73,6 +73,12 @@ namespace Functions
             pageArr.RemoveAt(pagenumber - 1);
             nBook.Pages = pageArr;
 
+            //go through a list of pages, setting the page number to the proper location
+            for (int i = 0; i < nBook.Pages.Count; i++)
+            {
+                nBook.Pages[i].Number = (i + 1).ToString();
+            }
+
             // =====================================================================================================
             //                                         UPSERT TO COSMOS DB
             // =====================================================================================================
