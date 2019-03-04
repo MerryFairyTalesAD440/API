@@ -110,7 +110,7 @@ namespace Functions
             }
             else {
                 //return error telling user wrong information passed in body
-                return new BadRequestObjectResult("Wrong information passed in the body! For example: container:getsastoken");
+                return new BadRequestObjectResult("Wrong information passed in the body! For example: container:name-of-container");
             }
 
 
