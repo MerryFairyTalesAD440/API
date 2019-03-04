@@ -106,12 +106,13 @@ namespace Functions
                 //                                         CREATE A NEW BOOK
                 // =====================================================================================================
                 Book nBook = new Book();
-                nBook.Id = oBook.Id;
+
+                nBook.Id          = oBook.Id;
                 nBook.Cover_Image = oBook.Cover_Image;
-                nBook.Author = oBook.Author;
+                nBook.Author      = oBook.Author;
                 nBook.Description = oBook.Description;
-                nBook.Title = oBook.Title;
-                nBook.Pages = oBook.Pages;
+                nBook.Title       = oBook.Title;
+                nBook.Pages       = oBook.Pages;
 
                 List<Language> langArr = nBook.Pages[pagenumber - 1].Languages.ToList<Language>();
                 langArr.RemoveAt(idxOfLangCode);
@@ -125,8 +126,7 @@ namespace Functions
 
                 return (ActionResult)new StatusCodeResult(200);
             }
-
-
+            //not really needed, but I need a return statement
             else
             {
                 return (ActionResult)new StatusCodeResult(400);
