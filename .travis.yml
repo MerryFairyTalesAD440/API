@@ -24,13 +24,6 @@ script:
  - ls
 
 deploy:
- - provider: azure_web_apps
-   skip_cleanup: true
-   site: AZURE_DEV_SITENAME
-   on:
-    branch: develop
- - provider: azure_web_apps
-   skip_cleanup: true
-   site: AZURE_PROD_SITENAME
-   on:
-    branch: master
+- provider: script
+  script: git fetch --unshallow && git push https://$AZURE_WA_USERNAME:$AZURE_WA_PASSWORD@$AZURE_DEV_SITENAME.scm.azurewebsites.net:443/my-new-website.git HEAD:refs/heads/master
+  on: develop
