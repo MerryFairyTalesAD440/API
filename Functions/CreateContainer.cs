@@ -10,16 +10,22 @@ using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Microsoft.Azure.Services.AppAuthentication;
 using Microsoft.Azure.KeyVault;
-
-
+using System;
 
 namespace CreateContainer
 {
     public static class CreateContainer
     {
+        /// <summary>
+        /// Passing in a book name will create a private container in blob storage with the name of the container being the book name. 
+        /// </summary>
+        /// <returns>The run.</returns>
+        /// <param name="req">Req.</param>
+        /// <param name="log">Log.</param>
+        /// <param name="context">Context.</param>
         [FunctionName("CreateContainer")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)]HttpRequest req, ILogger log)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)]HttpRequest req, ILogger log, ExecutionContext context)
         {
             string name = req.Query["name"];
 
@@ -27,28 +33,54 @@ namespace CreateContainer
             dynamic data = JsonConvert.DeserializeObject(requestBody);
             name = name ?? data?.name;
 
-            log.LogInformation("starting container build function.");
-            ProcessAsync(name, log).GetAwaiter().GetResult();
-
+            log.LogInformation("---- starting container build function.");
+            ProcessAsync(name, log, context).GetAwaiter().GetResult();
 
             return name != null
                 ? (ActionResult)new OkObjectResult("Container created with the name \"" + name + "\"")
                 : new BadRequestObjectResult("Please pass a name on the query string or in the request body");
         }
 
-
-        private static async Task ProcessAsync(string containerName, ILogger log)
+        /// <summary>
+        /// Processes the async to build the access the key vault and build the container. 
+        /// </summary>
+        /// <returns>The async.</returns>
+        /// <param name="containerName">Container name.</param>
+        /// <param name="log">Log.</param>
+        /// <param name="context">Context.</param>
+        private static async Task ProcessAsync(string containerName, ILogger log, ExecutionContext context)
         {
+            log.LogInformation("---- in ProcessAsync function");
+
             CloudStorageAccount storageAccount = null;
             CloudBlobContainer cloudBlobContainer = null;
 
-            log.LogInformation("In ProcessAsync function, attemping to access Key Vault.");
-            // Code to grab the key from the Key Vault.
+            //grab the environment variabled from the local.settings.json file
+            string key_vault_uri = System.Environment.GetEnvironmentVariable("KEY_VAULT_URI");
+            string storage_name = System.Environment.GetEnvironmentVariable("STORAGE_NAME");
+            string storageConnectionString = System.Environment.GetEnvironmentVariable("CONNECTION_STRING");
+            log.LogInformation("---- setting my local variables for the key vault");
+
+            // Make a connection to key vault
             var azureServiceTokenProvider = new AzureServiceTokenProvider();
             var keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(azureServiceTokenProvider.KeyVaultTokenCallback));
-            var secret = await keyVaultClient.GetSecretAsync("https://key-vault-for-container.vault.azure.net/secrets/connection-string/");
-            string storageConnectionString = secret.Value.ToString();
+            log.LogInformation("---- create a Key Vault client");
 
+            // Build the URL for the key vault from the settings 
+            string keyVaultURI = key_vault_uri + "/secrets/" + storage_name;
+            log.LogInformation("---- create the key vault URI");
+
+            try 
+            {
+                var secret = await keyVaultClient.GetSecretAsync(keyVaultURI);
+                var storagePrimaryAccessKey = secret.Value;
+                storageConnectionString = storagePrimaryAccessKey;
+                log.LogInformation("----- connection string was retrieved from the Key Vault");
+            }
+            catch (Exception ex)
+            {
+                log.LogInformation("----- Cannot access the Key Vault.");
+            }
 
             // Check whether the connection string can be parsed.
             if (CloudStorageAccount.TryParse(storageConnectionString, out storageAccount))
@@ -87,7 +119,6 @@ namespace CreateContainer
                                     "defined in the system environment variables.");
             }
         }
-
 
     }
 
