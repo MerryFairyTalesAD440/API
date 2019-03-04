@@ -228,7 +228,7 @@ namespace Functions
         /// <summary>
         /// Checking if the proper information was passed
         /// </summary>
-        /// <param name="data"></param>
+        /// <param name="data">dynamic data passed in body</param>
         /// <returns>boolean</returns>
         public static bool validDocument(dynamic data)
         {
@@ -244,8 +244,8 @@ namespace Functions
         /// <summary>
         /// Checks if a value has been returned by iqueryable
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="enumerable"></param>
+        /// <typeparam name="T">Object type</typeparam>
+        /// <param name="enumerable">Book Query</param>
         /// <returns>boolean</returns>
         public static bool returnsValue<T>(this IEnumerable<T> enumerable)
         {
@@ -261,10 +261,10 @@ namespace Functions
         /// <summary>
         /// Makes sure route info matches book.
         /// </summary>
-        /// <param name="bookid"></param>
-        /// <param name="pageid"></param>
-        /// <param name="languagecode"></param>
-        /// <param name="data"></param>
+        /// <param name="bookid">route book id</param>
+        /// <param name="pageid">route page id</param>
+        /// <param name="languagecode">coute language code</param>
+        /// <param name="data">dynamic data posted in body</param>
         /// <returns>boolean</returns>
         public static bool routeBookMatches(string bookid, string pageid, string languagecode, dynamic data)
         {
