@@ -161,6 +161,9 @@ namespace Functions
                             return (ActionResult)new NotFoundObjectResult(new { message = "Page ID not found" });
                         }
                     }
+                    else {
+                        return (ActionResult)new NotFoundObjectResult(new { message = "Book ID not found" });
+                    }
 
                 }
 
