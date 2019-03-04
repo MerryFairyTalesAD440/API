@@ -25,5 +25,5 @@ script:
 
 deploy:
 - provider: script
-  script: git fetch && git push https://$AZURE_WA_USERNAME:$AZURE_WA_PASSWORD@$AZURE_DEV_SITENAME.scm.azurewebsites.net:443/my-new-website.git HEAD:refs/heads/master
+  script: git fetch && git push https://$AZURE_WA_USERNAME:$AZURE_WA_PASSWORD@$AZURE_DEV_SITENAME.scm.azurewebsites.net:443/$AZURE_DEV_SITENAME.git HEAD:refs/heads/master
   on: develop
