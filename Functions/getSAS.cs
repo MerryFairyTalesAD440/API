@@ -80,7 +80,7 @@ namespace Functions
                 //display unauthorize error.  Im not sure which code to return for this catch
                 catch (KeyVaultErrorException ex)
                 {
-                    return new ForbidResult("Unable to access secrets in vault!");
+                    return new ForbidResult("Unable to access secrets in vault!" + ex.Message.ToString());
                 }
                 //set uri
                 Uri address = new Uri(uri + containerName);
