@@ -17,13 +17,13 @@ using System.Collections.Generic;
 
 namespace Functions
 {
-    public static class DeleteLanguage
+    public static class DeletePage
     {
-        [FunctionName("DeleteLanguage")]
+        [FunctionName("DeletePage")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "delete", Route = "books/{bookid}/pages/{pagenum}/languages-toDelete/{code}/")] HttpRequest req, string bookid, string pagenum, string code, ILogger log, ExecutionContext context)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "books/{bookid}/pages-toDelete/{pagenum}/")] HttpRequest req, string bookid, string pagenum, ILogger log, ExecutionContext context)
         {
-            log.LogInformation("----- function DeleteLanguage from a book was executed");
+            log.LogInformation("C# HTTP trigger function processed a request.");
 
             // convert "pagenumber" to an integer
             int pagenumber = Convert.ToInt32(pagenum);
@@ -31,19 +31,19 @@ namespace Functions
             //                                            GET MY VARIABLES 
             // =====================================================================================================
             //TODO: change this to read from Azure
-            string cosmosURI          = System.Environment.GetEnvironmentVariable("CosmosURI");
-            string cosmosKey          = System.Environment.GetEnvironmentVariable("CosmosKey");
-            string cosmosDBName       = System.Environment.GetEnvironmentVariable("CosmosDBName");
+            string cosmosURI = System.Environment.GetEnvironmentVariable("CosmosURI");
+            string cosmosKey = System.Environment.GetEnvironmentVariable("CosmosKey");
+            string cosmosDBName = System.Environment.GetEnvironmentVariable("CosmosDBName");
             string cosmosDBCollection = System.Environment.GetEnvironmentVariable("CosmosDBCollection");
 
             // =====================================================================================================
             //                                         CONNECT TO COSMOS DB
             // =====================================================================================================
-            DocumentClient client    = new DocumentClient(new Uri(cosmosURI), cosmosKey);
+            DocumentClient client = new DocumentClient(new Uri(cosmosURI), cosmosKey);
             FeedOptions queryOptions = new FeedOptions { EnableCrossPartitionQuery = true };
-            var collectionLink       = UriFactory.CreateDocumentCollectionUri(cosmosDBName, cosmosDBCollection);
-            var query                = "SELECT * FROM Books b WHERE b.id = \'" + bookid + "\'";
-            var document             = client.CreateDocumentQuery(collectionLink, query, queryOptions).ToList();
+            var collectionLink = UriFactory.CreateDocumentCollectionUri(cosmosDBName, cosmosDBCollection);
+            var query = "SELECT * FROM Books b WHERE b.id = \'" + bookid + "\'";
+            var document = client.CreateDocumentQuery(collectionLink, query, queryOptions).ToList();
             log.LogInformation(document.Count.ToString());
 
             // =====================================================================================================
@@ -57,23 +57,6 @@ namespace Functions
             // Bad page input
             if (pagenumber < 1 || pagenumber > oBook.Pages.Count()) { return (ActionResult)new StatusCodeResult(400); }
 
-          
-            int len = oBook.Pages[pagenumber - 1].Languages.Count();
-            int idxOfLangCode = -1;
-
-            //search for the index of the language
-            for (int i = 0; i < len; i++)
-            {
-                // if they match, save the index
-                if (oBook.Pages[pagenumber - 1].Languages[i].language.ToLower() == code.ToLower())
-                {
-                    idxOfLangCode = i;
-                    break;
-                }
-            }
-            // bad code, no matching language
-            if (idxOfLangCode == -1) { return (ActionResult)new StatusCodeResult(400); }
-
             // =====================================================================================================
             //                                         CREATE A NEW BOOK
             // =====================================================================================================
@@ -86,9 +69,9 @@ namespace Functions
             nBook.Title = oBook.Title;
             nBook.Pages = oBook.Pages;
 
-            List<Language> langArr = nBook.Pages[pagenumber - 1].Languages.ToList<Language>();
-            langArr.RemoveAt(idxOfLangCode);
-            nBook.Pages[pagenumber - 1].Languages = langArr;
+            List<Page> pageArr = nBook.Pages.ToList<Page>();
+            pageArr.RemoveAt(pagenumber - 1);
+            nBook.Pages = pageArr;
 
             // =====================================================================================================
             //                                         UPSERT TO COSMOS DB
@@ -97,7 +80,6 @@ namespace Functions
             log.LogInformation($"{result}");
 
             return (ActionResult)new StatusCodeResult(200);
-
         }
     }
 }
