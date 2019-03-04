@@ -23,7 +23,7 @@ namespace Functions
         [Consumes("application/json")]
         [Produces("application/json")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "put", "post", "delete", "get", Route = "books/{bookid}/pages/{pageid}/language/{languagecode}")] HttpRequestMessage req, ILogger log, string bookid, string pageid, string languagecode, ExecutionContext context)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "put", "post", Route = "books/{bookid}/pages/{pageid}/language/{languagecode}")] HttpRequestMessage req, ILogger log, string bookid, string pageid, string languagecode, ExecutionContext context)
         {
             log.LogInformation("Http function to put/post page and language");
             string requestBody = await req.Content.ReadAsStringAsync();
