@@ -54,8 +54,12 @@ namespace Functions
             // resource not found 
             if (oBook.Id == null) { return (ActionResult)new StatusCodeResult(404); }
 
+            // if pages is empty
+            if (oBook.Pages.Count == 0) { return (ActionResult)new StatusCodeResult(404); }
+ 
+
             // Bad page input
-            if (pagenumber < 1 || pagenumber > oBook.Pages.Count()) { return (ActionResult)new StatusCodeResult(400); }
+            if (pagenumber < 1 || pagenumber > oBook.Pages.Count()) { return (ActionResult)new StatusCodeResult(404); }
 
             // =====================================================================================================
             //                                         CREATE A NEW BOOK
