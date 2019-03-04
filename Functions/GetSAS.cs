@@ -120,7 +120,7 @@ namespace Functions
         /// <summary> 
         /// helper function uses issue sas token on container passed in
         /// </summary>
-        /// <param name="container"></param>
+        /// <param name="container">name of container</param>
         /// <returns>string [] with uri and sas token</returns>
         private static string[] getContainerSasUri(CloudBlobContainer container)
         {
