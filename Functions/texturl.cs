@@ -21,6 +21,7 @@ using Microsoft.AspNetCore.Http;
 
 
 //function to update a texturl for a book
+//@author francesco
 namespace Functions
 {
     public static class Text
