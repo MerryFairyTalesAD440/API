@@ -99,14 +99,22 @@ namespace Functions
 
                     Book b = documents.ElementAt(0);
                     //update
-                    b.Pages.ElementAt(int.Parse(pageid) - 1).Languages.ElementAt(languagecode.Equals("en_US") ? 0 : 1).Text_Url = data.text_url.ToString();
+                    for (int i = 0; i < b.Pages.Count(); i++)
+                    {
+                        Page p = b.Pages.ElementAt(i);
+                        for (int j = 0; j < p.Languages.Count(); j++)
+                        {
+                            p.Languages.ElementAt(j).Text_Url = data.pages[i].languages[j].text_url.ToString();
+                        }
+                    }
+
                     var result = await dbClient.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), b);
                     log.LogInformation($"document updated -> {result}");
 
                 }
                 catch (Exception wrt)
                 {
-                    return (ObjectResult)new ObjectResult("404" + wrt.Message.ToString());
+                    return (ObjectResult)new ObjectResult("404 " + "The requested book was not found");
                 }
 
                 return (ActionResult)new OkObjectResult($"200, DB write successful -> , {data}");
