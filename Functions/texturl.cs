@@ -29,7 +29,7 @@ namespace Functions
         [Consumes("application/json")]
         [Produces("application/json")]
         public static async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous,
-        "get", "post",
+        "put", "post",
         Route = "books/{bookId}/pages/{pageId}/languages/{languageCode}/text")]
         HttpRequest req,
         string bookid,
@@ -42,7 +42,7 @@ namespace Functions
             {
                 log.LogInformation("Http function to put/post texturl");
 
-                //get POST body
+                //get request body
                 string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
                 dynamic data = JsonConvert.DeserializeObject(requestBody);
                 log.LogInformation($"data -> {data}");
@@ -60,7 +60,7 @@ namespace Functions
                 var keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(serviceTokenProvider.KeyVaultTokenCallback));
                 log.LogInformation("keyVaultClient");
 
-                //SecretBundle secretValues;
+                SecretBundle secrets;
                 String uri = String.Empty;
                 String key = String.Empty;
                 String database = String.Empty;
@@ -68,20 +68,20 @@ namespace Functions
 
                 try
                 {
-                    SecretBundle secretURI = await keyVaultClient.GetSecretAsync($"{config["KeyVaultUri"]}secrets/cosmos-uri/");
-                    SecretBundle secretKey = await keyVaultClient.GetSecretAsync($"{config["KeyVaultUri"]}secrets/cosmos-key/");
-                    SecretBundle secretDB = await keyVaultClient.GetSecretAsync($"{config["KeyVaultUri"]}secrets/cosmos-db-name/");
-                    SecretBundle secretTable = await keyVaultClient.GetSecretAsync($"{config["KeyVaultUri"]}secrets/cosmos-table/");
+                    //storage account is the keyvault key
+                    secrets = await keyVaultClient.GetSecretAsync($"{config["KEY_VAULT_URI"]}secrets/{config["COSMOS_NAME"]}/");
+                    //parse json stored in keyvalut
+                    JObject details = JObject.Parse(secrets.Value.ToString());
+                    uri = (string)details["COSMOS_URI"];
+                    key = (string)details["COSMOS_KEY"];
+                    database = (string)details["COSMOS_DB"];
+                    collection = (string)details["COSMOS_COLLECTION"];
 
-                    uri = secretURI.Value;
-                    key = secretKey.Value;
-                    database = secretDB.Value;
-                    collection = secretTable.Value;
                     log.LogInformation("Secret Values retrieved from KeyVault.");
                 }
                 catch (Exception kex)
                 {
-                    return (ObjectResult)new ObjectResult(kex.Message.ToString());
+                    return (ObjectResult)new ObjectResult("500" + kex.Message.ToString());
                 }
 
                 //declare client
@@ -98,21 +98,21 @@ namespace Functions
 
                     Book b = documents.ElementAt(0);
                     //update
-                    b.Pages.ElementAt(int.Parse(pageid) - 1).Languages.ElementAt(languagecode.Equals("en_US") ? 0 : 1).Text_Url = data.text.ToString();
+                    b.Pages.ElementAt(int.Parse(pageid) - 1).Languages.ElementAt(languagecode.Equals("en_US") ? 0 : 1).Text_Url = data.text_url.ToString();
                     var result = await dbClient.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), b);
                     log.LogInformation($"document updated -> {result}");
 
                 }
                 catch (Exception wrt)
                 {
-                    return (ObjectResult)new ObjectResult(wrt.Message.ToString());
+                    return (ObjectResult)new ObjectResult("404" + wrt.Message.ToString());
                 }
 
-                return (ActionResult)new OkObjectResult($"200ok, DB write successful -> , {data}");
+                return (ActionResult)new OkObjectResult($"200, DB write successful -> , {data}");
             }
             catch (Exception e)
             {
-                return (ActionResult)new BadRequestObjectResult("400");
+                return (ActionResult)new ObjectResult("400" + e.Message.ToString());
             }
         }
     }
