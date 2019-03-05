@@ -11,6 +11,7 @@ using Microsoft.WindowsAzure.Storage.Blob;
 using Microsoft.Azure.Services.AppAuthentication;
 using Microsoft.Azure.KeyVault;
 using System;
+using System.Net.Http;
 
 namespace CreateContainer
 {
@@ -25,13 +26,19 @@ namespace CreateContainer
         /// <param name="context">Context.</param>
         [FunctionName("CreateContainer")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)]HttpRequest req, ILogger log, ExecutionContext context)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)]HttpRequestMessage req, ILogger log, ExecutionContext context)
         {
-            string name = req.Query["name"];
+            log.LogInformation("----- Create Container function was executed.");
 
-            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+            // only allog for POST methods on the container
+            if (req.Method != HttpMethod.Post)
+            {
+                return (ActionResult)new StatusCodeResult(405);
+            }
+
+            string requestBody = await req.Content.ReadAsStringAsync();
             dynamic data = JsonConvert.DeserializeObject(requestBody);
-            name = name ?? data?.name;
+            string name = data?.name;
 
             log.LogInformation("---- starting container build function.");
             ProcessAsync(name, log, context).GetAwaiter().GetResult();
