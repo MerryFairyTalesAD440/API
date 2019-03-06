@@ -50,8 +50,8 @@ namespace Functions
                         .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
                         .AddEnvironmentVariables()
                         .Build();
-            dynamic data = JsonConvert.DeserializeObject(System.IO.File.ReadAllText(@"C:\Users\mvien\desktop\sample.json"));
-            //dynamic data = JsonConvert.DeserializeObject(requestBody);
+            //dynamic data = JsonConvert.DeserializeObject(System.IO.File.ReadAllText(@"C:\Users\mvien\desktop\sample.json"));
+            dynamic data = JsonConvert.DeserializeObject(requestBody);
             //TODO: Make sure all return paths from the swagger document are impletmented
             //validate json
             if (validDocument(data))
