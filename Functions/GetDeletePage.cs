@@ -48,6 +48,8 @@ namespace Functions
             // =====================================================================================================
             //                                             VALIDATE INPUT
             // =====================================================================================================
+            if (document.Count == 0) { return (ActionResult)new StatusCodeResult(404); }
+
             Book oBook = document.ElementAt(0);
 
             // resource not found 
@@ -122,7 +124,7 @@ namespace Functions
             //not really needed, but I need a return statement
             else
             {
-                return (ActionResult)new StatusCodeResult(400);
+                return (ActionResult)new StatusCodeResult(404);
             }
         }
     }

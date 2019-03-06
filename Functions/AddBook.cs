@@ -9,42 +9,43 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 
-namespace API.Function
+namespace Functions
 {
     public static class AddBook
     {
-        /* AddBook - Adds a new book. Includes code to connect to test Cosmos DB resource that was deleted. For now, returns
-        just a generated book id. For next sprint, connect to Brad's container function and Francesco's Cosmos DB function*/
+        /* AddBook - Adds a new book. Returns the book id. */
         [FunctionName("PostBook")]
         [Consumes("application/json")]
         [Produces("application/json")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "books")] HttpRequest req,
-            /* This was my test implementation that is no longer running */
-            // [CosmosDB(
-            //     databaseName: "MerryFairyTalesDB",
-            //     collectionName: "Books",
-            //     ConnectionStringSetting = "CosmosDBConnection")]
-            // IAsyncCollector<Book> books, 
+            [CosmosDB(
+                databaseName: "MerryFairyTalesDB",
+                collectionName: "Books",
+                ConnectionStringSetting = "CosmosDBConnection")]
+            IAsyncCollector<NewBook> books, 
             ILogger log)
         {
             log.LogInformation("C# HTTP trigger function processed a request to add a new book");
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            dynamic book = JsonConvert.DeserializeObject<Book>(requestBody);
-            // TODO: create container for new book
+            dynamic book = JsonConvert.DeserializeObject<NewBook>(requestBody);
             book.id = System.Guid.NewGuid().ToString();
-            // TODO: connect to new database, the code was for the SQL API used by my test database
-            // await books.AddAsync(book);
-            // return (ActionResult)new OkObjectResult(book);
-            return (ActionResult)new OkObjectResult(book.id);
+            log.LogInformation("Saving book to database.");
+            await books.AddAsync(book);String name = book.title;       
+            log.LogInformation("Starting container build function.");
+            // call Brad's Containter Util
+            ContainerUtil.ProcessAsync(name, log).GetAwaiter().GetResult();
+            return book != null
+                ? (ActionResult)new OkObjectResult(book.id)
+                : new BadRequestObjectResult("Please pass a valid book in the request body");
         }
 
     /* New Book Data Model */
-    public class Book {
+    public class NewBook {
         public string id { get; set; }
-        public string title { get; set; }
         public string description { get; set; }
         public string author { get; set; }
+        public string title { get; set; }
     }
 
     }

@@ -25,26 +25,22 @@ using Newtonsoft.Json.Linq;
 
 namespace Functions
 {
-    public static class GetBooks
+    public static class deleteBook
     {
-        /* GET /books - function to get or list all books. */
-        [FunctionName("books")]
-        [Consumes("application/json")]
-        [Produces("application/json")]
+        [FunctionName("deleteBook")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequestMessage req,
+            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "books/{bookId}")] HttpRequestMessage req,
+            string bookid,
+            ExecutionContext context,
             ILogger log)
         {
-            if (req.Method == HttpMethod.Post) {
-                return (ActionResult)new StatusCodeResult(405);
-            }
+            log.LogInformation("C# HTTP trigger function to delete book by id.");
 
-  
+
             //apply for key vault client
             var serviceTokenProvider = new AzureServiceTokenProvider();
-          
             var keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(serviceTokenProvider.KeyVaultTokenCallback));
-            
+
             //storage variables for secrets
             SecretBundle secrets;
             String cosmosEndpointUrl = String.Empty;
@@ -58,6 +54,7 @@ namespace Functions
 
                 secrets = await keyVaultClient.GetSecretAsync("https://maria-key-vault.vault.azure.net/secrets/cosmos-connection/");
 
+
                 //parse json stored.
                 JObject details = JObject.Parse(secrets.Value.ToString());
                 cosmosEndpointUrl = (string)details["COSMOS_URI"];
@@ -65,24 +62,59 @@ namespace Functions
                 databaseId = (string)details["COSMOS_DB"];
                 collection = (string)details["COSMOS_COLLECTION"];
 
-
-            } catch (KeyVaultErrorException ex) {
+            }
+            catch (KeyVaultErrorException ex)
+            {
                 return new ForbidResult("Unable to access secrets in vault!" + ex.Message);
             }
 
+           
 
-            // Connect to the cosmos endpoint with authorization key.
             try
             {
+
+
                 DocumentClient client = new DocumentClient(new Uri(cosmosEndpointUrl), cosmosAuthorizationKey);
 
-                // Set some common query options
-                FeedOptions queryOptions = new FeedOptions { MaxItemCount = -1 };
+                var collectionLink = UriFactory.CreateDocumentCollectionUri(databaseId, collection);
 
-                IQueryable<Book> queryBooks = client.CreateDocumentQuery<Book>(UriFactory.CreateDocumentCollectionUri(databaseId, collection),
-                   queryOptions);
+                var query = "SELECT * FROM Books b WHERE b.id = \'" + bookid + "\'";
 
-                return (ActionResult)new OkObjectResult(queryBooks);
+                log.LogInformation("query: " + query);
+
+                // Currently getting issue about EnableCrossPartitionQuery disabled.
+                FeedOptions queryOptions = new FeedOptions { EnableCrossPartitionQuery = true };
+
+
+                log.LogInformation("queryOptions: " + queryOptions);
+
+
+                var document = client.CreateDocumentQuery(collectionLink, query, queryOptions).ToList();
+
+                log.LogInformation("document: " + document);
+
+
+                // Getting the book element
+                Book book = document.ElementAt(0);
+
+                log.LogInformation("book: " + book);
+
+                // Book ID not found 
+                if (book.Id == null) { 
+                    return (ActionResult)new StatusCodeResult(404); 
+                }
+
+
+                Document doc = client.CreateDocumentQuery(collectionLink)
+                            .Where(d => d.Id == bookid)
+                            .AsEnumerable()
+                            .FirstOrDefault();
+
+                log.LogInformation("doc: " + doc);
+
+                await client.DeleteDocumentAsync(doc.SelfLink);
+
+                return (ActionResult)new OkObjectResult("Successfully deleted {0} : " + bookid);
 
             }
             catch (Exception ex)
@@ -91,8 +123,9 @@ namespace Functions
 
                 return (ActionResult)new StatusCodeResult(500);
             }
-
         }
-            
+
     }
+
+
 }
