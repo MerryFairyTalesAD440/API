@@ -50,7 +50,6 @@ namespace Functions
             dynamic data = JsonConvert.DeserializeObject(requestBody);
             //TODO: Make sure all return paths from the swagger document are impletmented
             //validate json
-            log.LogInformation("before valid document");
             if (validDocument(data))
             {
                 //apply for key vault client
@@ -67,7 +66,6 @@ namespace Functions
 
                 try
                 {
-                    log.LogInformation("getting secrets");
                     //storage account is the keyvault key
                     secrets = await keyVaultClient.GetSecretAsync($"{config["KEY_VAULT_URI"]}secrets/{config["COSMOS_NAME"]}/");
                     //parse json stored in keyvalut
@@ -76,7 +74,6 @@ namespace Functions
                     key = (string)details["COSMOS_KEY"];
                     database = (string)details["COSMOS_DB"];
                     collection = (string)details["COSMOS_COLLECTION"];
-                    log.LogInformation("after secrets");
                 }
 
                 //display unauthorize error.  Im not sure which code to return for this catch
@@ -91,11 +88,9 @@ namespace Functions
 
                 try
                 {
-                    log.LogInformation("getting book");
                     //set book query.  search for book id
                     bookQuery = client.CreateDocumentQuery<Book>(UriFactory.CreateDocumentCollectionUri(database, collection),
                     "SELECT a.id, a.title, a.description, a.author, a.pages FROM Books a  WHERE a.id = \'" + bookid + "\'", queryOptions);
-                    log.LogInformation("retreived book");
                 }
                 catch (Exception ex)
                 {
