@@ -29,7 +29,6 @@ namespace Functions
             string requestBody = await req.Content.ReadAsStringAsync();
             //declare client
             DocumentClient client;
-            
             //declare query
             IQueryable<Book> bookQuery;
             //not fool proof but will work for now
