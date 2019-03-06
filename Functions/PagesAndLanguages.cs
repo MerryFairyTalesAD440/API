@@ -157,20 +157,7 @@ namespace Functions
                             //else return conflict since book/page/language already exists
                             return (ActionResult)new StatusCodeResult(409);
                         }
-                        // if the page does not exists.  create page
-                        else if (bookReturned.Pages.Find(x => x.Number.Contains(pageid)) == null)
-                        {
-                            try
-                            {
-                                //create document
-                                await client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), book);
-                                return (ActionResult)new OkObjectResult(new { language = languagecode });
-                            }
-                            catch (Exception ex)
-                            {
-                                return (ActionResult)new StatusCodeResult(500);
-                            }
-                        }
+                    
                         else
                         {
                             return (ActionResult)new NotFoundObjectResult(new { message = "Page ID not found" });
