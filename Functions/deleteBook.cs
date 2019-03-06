@@ -29,7 +29,7 @@ namespace Functions
     {
         [FunctionName("deleteBook")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "books/{bookId}")] HttpRequestMessage req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "books/{bookId}")] HttpRequestMessage req,
             string bookid,
             ExecutionContext context,
             ILogger log)
