@@ -1,42 +1,45 @@
 using System;
+using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Microsoft.Azure.Documents.Client;
-using System.Linq;
 using System.Net.Http;
 using System.Collections.Generic;
+using System.Linq;
+using Microsoft.Azure.Documents.Client;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Azure.KeyVault;
 using Microsoft.Azure.Services.AppAuthentication;
+using Microsoft.Azure.KeyVault;
 using Microsoft.Azure.KeyVault.Models;
 using Newtonsoft.Json.Linq;
 
 namespace Functions
 {
-    public static class PagesAndLanguages
+    public static class PutPages
     {
-        [FunctionName("pagesandlanguages")]
         [Consumes("application/json")]
         [Produces("application/json")]
+        [FunctionName("PutPages")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "put", "post", Route = "books/{bookid}/pages/{pageid}/language/{languagecode}")] HttpRequestMessage req, ILogger log, string bookid, string pageid, string languagecode, ExecutionContext context)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "books/{bookid}/pages/{pageid}")] HttpRequestMessage req, ILogger log, string bookid, string pageid, ExecutionContext context)
         {
-            log.LogInformation("Http function to put/post language");
             string requestBody = await req.Content.ReadAsStringAsync();
             //declare client
             DocumentClient client;
-            
             //declare query
             IQueryable<Book> bookQuery;
             //not fool proof but will work for now
             bookid = bookid.Replace(" ", "");
             pageid = pageid.Replace(" ", "");
-            languagecode = languagecode.Replace(" ", "");
-
+            //only allow post methods
+            if (req.Method != HttpMethod.Get)
+            {
+                return (ActionResult)new StatusCodeResult(405);
+            }
             //use configuration builder for variables
             //azure functions does not use configuration manager in .net core 2
             //key vault uri stored in local.settings.json file
@@ -47,9 +50,9 @@ namespace Functions
                         .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
                         .AddEnvironmentVariables()
                         .Build();
-            //dynamic data = JsonConvert.DeserializeObject(System.IO.File.ReadAllText(@"C:\Users\mvien\desktop\sample.json"));
-            dynamic data = JsonConvert.DeserializeObject(requestBody);
-
+            dynamic data = JsonConvert.DeserializeObject(System.IO.File.ReadAllText(@"C:\Users\mvien\desktop\sample.json"));
+            //dynamic data = JsonConvert.DeserializeObject(requestBody);
+            //TODO: Make sure all return paths from the swagger document are impletmented
             //validate json
             if (validDocument(data))
             {
@@ -117,95 +120,39 @@ namespace Functions
                 book.Description = data?.description;
                 book.Title = data?.title;
 
-                if (!routeBookMatches(bookid, pageid, languagecode, data))
+                if (!routeBookMatches(bookid, pageid, data))
                 {
                     return (ActionResult)new NotFoundObjectResult("Route information does not match book!.");
                 }
 
-                // if post
-                if (req.Method == HttpMethod.Post)
+
+
+                //if put
+                if (req.Method == HttpMethod.Put)
                 {
                     //check if book is returned
                     if (returnsValue<Book>(bookQuery))
                     {
                         Book bookReturned = new Book();
                         bookReturned = bookQuery.ToList<Book>()[0];
-
-                        // if the page exists
                         if (bookReturned.Pages.Find(x => x.Number.Contains(pageid)) != null)
                         {
-                            Page p = bookReturned.Pages.Find(y => y.Number.Contains(pageid));
-                            //if the language doesnt exist
-                            if (p.Languages.Find(z => z.language.Contains(languagecode)) == null)
+                            try
                             {
-                                try
-                                {
-                                    //update book language
-                                    Language lang = new Language();
-                                    lang.language = languagecode;
-                                    bookReturned.Pages.Find(y => y.Number.Contains(pageid)).Languages.Add(lang);
-                                    //create document
-                                    await client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), bookReturned);
-                                    return (ActionResult)new OkObjectResult(new { message = "Language code added to page: " + pageid, language = languagecode });
-                                }
-                                catch (Exception ex)
-                                {
-                                    return (ActionResult)new StatusCodeResult(500);
-                                }
+                                //assign book returned from db values
+                                bookReturned.Pages.Find(x => x.Number.Contains(pageid)).Image_Url = book.Pages.Find(x => x.Number.Contains(pageid)).Image_Url;
+                                bookReturned.Pages.Find(x => x.Number.Contains(pageid)).Number = book.Pages.Find(x => x.Number.Contains(pageid)).Number;
+                                bookReturned.Pages.Find(x => x.Number.Contains(pageid)).Languages = book.Pages.Find(x => x.Number.Contains(pageid)).Languages;
+
+                                //update document in db if route variables and returned book matches
+                                await client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), bookReturned);
+                                return (ActionResult)new OkObjectResult("Page language successfully updated.");
 
                             }
-                            //else return conflict since book/page/language already exists
-                            return (ActionResult)new StatusCodeResult(409);
-                        }
-                    
-                        else
-                        {
-                            return (ActionResult)new NotFoundObjectResult(new { message = "Page ID not found" });
-                        }
-                    }
-                    else
-                    {
-                        return (ActionResult)new NotFoundObjectResult(new { message = "Book ID not found" });
-                    }
-
-                }
-
-                //if put
-                else if (req.Method == HttpMethod.Put)
-                {
-                    //check if book is returned
-                    if (returnsValue<Book>(bookQuery))
-                    {
-                        Book bookReturned = new Book();
-                        foreach (Book b in bookQuery)
-                        {
-                            bookReturned = b;
-                        }
-                        if (bookReturned.Pages.Find(x => x.Number.Contains(pageid)) != null)
-                        {
-                            Page p = bookReturned.Pages.Find(y => y.Number.Contains(pageid));
-                            if (p.Languages.Find(z => z.language.Contains(languagecode)) != null)
+                            catch (Exception ex)
                             {
-
-                                bookReturned = book;
-                                //create document
-                                try
-                                {
-                                    //update document in db if route variables and returned book matches
-                                    await client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), bookReturned);
-                                    return (ActionResult)new OkObjectResult("Page language successfully updated.");
-                                }
-                                catch (Exception ex)
-                                {
-                                    return (ActionResult)new StatusCodeResult(500);
-                                }
+                                return (ActionResult)new StatusCodeResult(500);
                             }
-
-                            else
-                            {
-                                return (ActionResult)new NotFoundObjectResult(new { message = "Language code not found" });
-                            }
-
                         }
                         else
                         {
@@ -234,7 +181,7 @@ namespace Functions
         /// <summary>
         /// Checking if the proper information was passed
         /// </summary>
-        /// <param name="data"> dynamic data from the body</param>
+        /// <param name="data">dynamic data from the body</param>
         /// <returns>boolean</returns>
         public static bool validDocument(dynamic data)
         {
@@ -250,7 +197,7 @@ namespace Functions
         /// <summary>
         /// Checks if a value has been returned by iqueryable
         /// </summary>
-        /// <typeparam name="T">Oject Type</typeparam>
+        /// <typeparam name="T">Object</typeparam>
         /// <param name="enumerable">Book Query</param>
         /// <returns>boolean</returns>
         public static bool returnsValue<T>(this IEnumerable<T> enumerable)
@@ -267,12 +214,12 @@ namespace Functions
         /// <summary>
         /// Makes sure route info matches book.
         /// </summary>
-        /// <param name="bookid">route data</param>
-        /// <param name="pageid">toute data</param>
-        /// <param name="languagecode">route data</param>
-        /// <param name="data">dynamic data from the body</param>
+        /// <param name="bookid"></param>
+        /// <param name="pageid"></param>
+        /// <param name="languagecode"></param>
+        /// <param name="data"></param>
         /// <returns>boolean</returns>
-        public static bool routeBookMatches(string bookid, string pageid, string languagecode, dynamic data)
+        public static bool routeBookMatches(string bookid, string pageid, dynamic data)
         {
             bool result = false;
             //set book
@@ -298,15 +245,12 @@ namespace Functions
             {
                 if (book.Pages.Find(x => x.Number.Contains(pageid)) != null)
                 {
-                    Page p = book.Pages.Find(y => y.Number.Contains(pageid));
-                    if (p.Languages.Find(z => z.language.Contains(languagecode)) != null)
-                    {
-                        result = true;
-                    }
+                    result = true;
                 }
             }
             return result;
         }
-
     }
+
+
 }
