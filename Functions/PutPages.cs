@@ -19,13 +19,13 @@ using Newtonsoft.Json.Linq;
 
 namespace Functions
 {
-    public static class PostPutPages
+    public static class PutPages
     {
         [Consumes("application/json")]
         [Produces("application/json")]
-        [FunctionName("postPutPages")]
+        [FunctionName("PutPages")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "put", "post", Route = "books/{bookid}/pages/{pageid}")] HttpRequestMessage req, ILogger log, string bookid, string pageid, ExecutionContext context)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "books/{bookid}/pages/{pageid}")] HttpRequestMessage req, ILogger log, string bookid, string pageid, ExecutionContext context)
         {
             string requestBody = await req.Content.ReadAsStringAsync();
             //declare client
@@ -35,7 +35,11 @@ namespace Functions
             //not fool proof but will work for now
             bookid = bookid.Replace(" ", "");
             pageid = pageid.Replace(" ", "");
-
+            //only allow post methods
+            if (req.Method != HttpMethod.Get)
+            {
+                return (ActionResult)new StatusCodeResult(405);
+            }
             //use configuration builder for variables
             //azure functions does not use configuration manager in .net core 2
             //key vault uri stored in local.settings.json file
@@ -46,8 +50,8 @@ namespace Functions
                         .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
                         .AddEnvironmentVariables()
                         .Build();
-            //dynamic data = JsonConvert.DeserializeObject(System.IO.File.ReadAllText(@"C:\Users\mvien\desktop\sample.json"));
-            dynamic data = JsonConvert.DeserializeObject(requestBody);
+            dynamic data = JsonConvert.DeserializeObject(System.IO.File.ReadAllText(@"C:\Users\mvien\desktop\sample.json"));
+            //dynamic data = JsonConvert.DeserializeObject(requestBody);
             //TODO: Make sure all return paths from the swagger document are impletmented
             //validate json
             if (validDocument(data))
@@ -118,69 +122,32 @@ namespace Functions
 
                 if (!routeBookMatches(bookid, pageid, data))
                 {
-                    return (ActionResult)new BadRequestObjectResult("Route information does not match book!.");
+                    return (ActionResult)new NotFoundObjectResult("Route information does not match book!.");
                 }
 
-                // if post
-                if (req.Method == HttpMethod.Post)
-                {
-                    //check if book is returned
-                    if (returnsValue<Book>(bookQuery))
-                    {
-                        Book bookReturned = new Book();
-                        foreach (Book b in bookQuery)
-                        {
 
-                            bookReturned = b;
-                        }
-
-                        // if the page does not exists
-                        if (bookReturned.Pages.Find(x => x.Number.Contains(pageid)) == null)
-                        {
-                            try
-                            {
-                                //create document
-                                await client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), book);
-                                return (ActionResult)new OkObjectResult("Page successfully added to book.");
-                            }
-                            catch (Exception ex)
-                            {
-                                return (ActionResult)new StatusCodeResult(500);
-                            }
-
-
-                        }
-
-                        else
-                        {
-                            return (ActionResult)new StatusCodeResult(409);
-                        }
-                    }
-                    else
-                    {
-                        return (ActionResult)new NotFoundObjectResult(new { message = "Book ID not found" });
-                    }
-
-                }
 
                 //if put
-                else if (req.Method == HttpMethod.Put)
+                if (req.Method == HttpMethod.Put)
                 {
                     //check if book is returned
                     if (returnsValue<Book>(bookQuery))
                     {
                         Book bookReturned = new Book();
-                        foreach (Book b in bookQuery)
-                        {
-                            bookReturned = b;
-                        }
+                        bookReturned = bookQuery.ToList<Book>()[0];
                         if (bookReturned.Pages.Find(x => x.Number.Contains(pageid)) != null)
                         {
                             try
                             {
+                                //assign book returned from db values
+                                bookReturned.Pages.Find(x => x.Number.Contains(pageid)).Image_Url = book.Pages.Find(x => x.Number.Contains(pageid)).Image_Url;
+                                bookReturned.Pages.Find(x => x.Number.Contains(pageid)).Number = book.Pages.Find(x => x.Number.Contains(pageid)).Number;
+                                bookReturned.Pages.Find(x => x.Number.Contains(pageid)).Languages = book.Pages.Find(x => x.Number.Contains(pageid)).Languages;
+
                                 //update document in db if route variables and returned book matches
-                                await client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), book);
+                                await client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), bookReturned);
                                 return (ActionResult)new OkObjectResult("Page language successfully updated.");
+
                             }
                             catch (Exception ex)
                             {
