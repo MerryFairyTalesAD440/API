@@ -19,7 +19,7 @@ namespace Functions
 {
     public static class PagesAndLanguages
     {
-        [FunctionName("pagesandlanguages")]
+        [FunctionName("PagesAndLanguages")]
         [Consumes("application/json")]
         [Produces("application/json")]
         public static async Task<IActionResult> Run(
