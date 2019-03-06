@@ -15,6 +15,9 @@ namespace Functions
         [JsonProperty(PropertyName = "image_url")]
         public string Image_Url { get; set; }
 
+        [JsonProperty(PropertyName = "audio_url")]
+        public string Audio_Url { get; set; }
+
         [JsonConverter(typeof(StringConverter<Language>))]
         [JsonProperty(PropertyName = "languages")]
         public List<Language> Languages { get; set; }
