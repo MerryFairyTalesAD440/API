@@ -38,6 +38,7 @@ namespace Functions
             {
                 return (ActionResult)new StatusCodeResult(405);
             }
+           
             //use configuration builder for variables
             //azure functions does not use configuration manager in .net core 2
             //key vault uri stored in local.settings.json file
