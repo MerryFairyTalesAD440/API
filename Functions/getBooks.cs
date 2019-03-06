@@ -33,19 +33,24 @@ namespace Functions
         [Produces("application/json")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequestMessage req,
+            ExecutionContext context,
             ILogger log)
         {
+            log.LogInformation("Getting list of books.");
             if (req.Method == HttpMethod.Post) {
                 return (ActionResult)new StatusCodeResult(405);
             }
 
-  
-            //apply for key vault client
-            var serviceTokenProvider = new AzureServiceTokenProvider();
-          
-            var keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(serviceTokenProvider.KeyVaultTokenCallback));
-            
-            //storage variables for secrets
+            var config = new ConfigurationBuilder()
+                        .SetBasePath(context.FunctionAppDirectory)
+                        .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
+                        .AddEnvironmentVariables()
+                        .Build();
+
+            log.LogInformation("Config >>> " + config);
+
+
+             //storage variables for secrets
             SecretBundle secrets;
             String cosmosEndpointUrl = String.Empty;
             String cosmosAuthorizationKey = String.Empty;
@@ -55,8 +60,15 @@ namespace Functions
 
             try
             {
+                var serviceTokenProvider = new AzureServiceTokenProvider();
+                log.LogInformation("serviceTokenProvider >>> " + serviceTokenProvider);
 
-                secrets = await keyVaultClient.GetSecretAsync("https://maria-key-vault.vault.azure.net/secrets/cosmos-connection/");
+                var keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(serviceTokenProvider.KeyVaultTokenCallback));
+                log.LogInformation("keyVaultClient >>> " + keyVaultClient);
+
+
+                secrets = await keyVaultClient.GetSecretAsync($"{config["KEY_VAULT_URI"]}secrets/{config["COSMOS_NAME"]}/");
+                log.LogInformation("Secrets retrieved... ");
 
                 //parse json stored.
                 JObject details = JObject.Parse(secrets.Value.ToString());
@@ -66,7 +78,8 @@ namespace Functions
                 collection = (string)details["COSMOS_COLLECTION"];
 
 
-            } catch (KeyVaultErrorException ex) {
+            } catch (Exception ex) {
+                log.LogError(ex.Message);
                 return new ForbidResult("Unable to access secrets in vault!" + ex.Message);
             }
 
@@ -75,19 +88,25 @@ namespace Functions
             try
             {
                 DocumentClient client = new DocumentClient(new Uri(cosmosEndpointUrl), cosmosAuthorizationKey);
-
+                log.LogInformation("new DocumentClient created... ");
                 // Set some common query options
-                FeedOptions queryOptions = new FeedOptions { MaxItemCount = -1 };
+                FeedOptions queryOptions = new FeedOptions { MaxItemCount = -1, EnableCrossPartitionQuery = true };
+                log.LogInformation("queryOptions... ");
 
                 IQueryable<Book> queryBooks = client.CreateDocumentQuery<Book>(UriFactory.CreateDocumentCollectionUri(databaseId, collection),
                    queryOptions);
+                log.LogInformation("queryBooks reached here... ");
 
-                return (ActionResult)new OkObjectResult(queryBooks);
+                List<Book> bookList = queryBooks.ToList<Book>();
+                string allBooks = JsonConvert.SerializeObject(bookList, Formatting.Indented);
+
+                log.LogInformation("Now returning all books...");
+                return (ActionResult)new OkObjectResult(allBooks);
 
             }
             catch (Exception ex)
             {
-                log.LogError(ex.Message);
+                log.LogError("ERROR: " + ex.Message);
 
                 return (ActionResult)new StatusCodeResult(500);
             }
