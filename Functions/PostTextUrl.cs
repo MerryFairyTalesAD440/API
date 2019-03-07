@@ -26,11 +26,11 @@ namespace Functions
 {
     public static class Text
     {
-        [FunctionName("text")]
+        [FunctionName("postText")]
         [Consumes("application/json")]
         [Produces("application/json")]
         public static async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous,
-        "put", "post",
+        "post",
         Route = "books/{bookId}/pages/{pageId}/languages/{languageCode}/text")]
         HttpRequest req,
         string bookid,
@@ -39,9 +39,11 @@ namespace Functions
         ILogger log,
         ExecutionContext context)
         {
+            var status = (StatusCodeResult)new StatusCodeResult(200);
+            string method = req.Method;
             try
             {
-                log.LogInformation("Http function to put/post texturl");
+                log.LogInformation("Http function to POST texturl");
 
                 //get request body
                 string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
@@ -82,47 +84,55 @@ namespace Functions
                 }
                 catch (Exception kex)
                 {
-                    return (ObjectResult)new ObjectResult("500" + kex.Message.ToString());
+                    status = (StatusCodeResult)new StatusCodeResult(500); //server error
                 }
 
-                //declare client
-                DocumentClient dbClient = new DocumentClient(new Uri(uri), key);
-                log.LogInformation("new DocumentClient");
-
-                try
+                if (200 == status.StatusCode)
                 {
-                    var collectionUri = UriFactory.CreateDocumentCollectionUri(database, collection);
-                    var query = "SELECT * FROM Books b WHERE b.id=\"" + bookid + "\"";
-                    var crossPartition = new FeedOptions { EnableCrossPartitionQuery = true };
-                    var documents = dbClient.CreateDocumentQuery(collectionUri, query, crossPartition).ToList();
-                    log.LogInformation($"document retrieved -> {documents.Count().ToString()}");
+                    //declare client
+                    DocumentClient dbClient = new DocumentClient(new Uri(uri), key);
+                    log.LogInformation("new DocumentClient");
 
-                    Book b = documents.ElementAt(0);
-                    //update
-                    for (int i = 0; i < b.Pages.Count(); i++)
+                    try
                     {
-                        Page p = b.Pages.ElementAt(i);
+                        var collectionUri = UriFactory.CreateDocumentCollectionUri(database, collection);
+                        var query = "SELECT * FROM Books b WHERE b.id=\"" + bookid + "\"";
+                        var crossPartition = new FeedOptions { EnableCrossPartitionQuery = true };
+                        var documents = dbClient.CreateDocumentQuery(collectionUri, query, crossPartition).ToList();
+                        log.LogInformation($"document retrieved -> {documents.Count().ToString()}");
+
+                        //insert
+                        Book b = documents.ElementAt(0);
+                        Page p = b.Pages.ElementAt(int.Parse(pageid) - 1);
                         for (int j = 0; j < p.Languages.Count(); j++)
                         {
-                            p.Languages.ElementAt(j).Text_Url = data.pages[i].languages[j].text_url.ToString();
+                            if (p.Languages.ElementAt(j).language.Equals(languagecode))
+                            {
+                                p.Languages.ElementAt(j).Text_Url = data.pages[int.Parse(pageid) - 1].languages[j].text_url.ToString();
+                            }
                         }
+
+                        var result = await dbClient.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), b);
+                        log.LogInformation($"document updated -> {result}");
+                        status = (StatusCodeResult)new StatusCodeResult(200); //db write successful
+
                     }
-
-                    var result = await dbClient.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), b);
-                    log.LogInformation($"document updated -> {result}");
-
+                    catch (Exception wrt)
+                    {
+                        status = (StatusCodeResult)new StatusCodeResult(404); //document not found
+                    }
                 }
-                catch (Exception wrt)
-                {
-                    return (ObjectResult)new ObjectResult("404 " + "The requested book was not found");
+                else
+                { 
+                    status = (StatusCodeResult)new StatusCodeResult(400);
                 }
-
-                return (ActionResult)new OkObjectResult($"200, DB write successful -> , {data}");
             }
             catch (Exception e)
             {
-                return (ActionResult)new ObjectResult("400" + e.Message.ToString());
+                status = (StatusCodeResult)new StatusCodeResult(400);
             }
+
+            return status;
         }
     }
 }
