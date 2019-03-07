@@ -135,7 +135,7 @@ namespace Functions
                         {
                             Page p = bookReturned.Pages.Find(y => y.Number.Contains(pageid));
                             //if the language doesnt exist
-                            if (p.Languages.Find(z => z.language.Contains(languagecode)) == null)
+                            if (p.Languages[0] == null || p.Languages.Find(z => z.language.Contains(languagecode)) == null)
                             {
                                 try
                                 {
@@ -183,21 +183,9 @@ namespace Functions
                         if (bookReturned.Pages.Find(x => x.Number.Contains(pageid)) != null)
                         {
                             Page p = bookReturned.Pages.Find(y => y.Number.Contains(pageid));
-                            if (p.Languages.Find(z => z.language.Contains(languagecode)) != null)
+                            if (p.Languages[0] == null||p.Languages.Find(z => z.language.Contains(languagecode)) != null)
                             {
-                                //set language
-                                bookReturned.Pages.Find(x => x.Number.Contains(pageid)).Languages
-                                    .Find(y => y.language.Contains(languagecode)).language = book.Pages.Find(a => a.Number.Contains(pageid)).Languages
-                                                                                                 .Find(b => b.language.Contains(languagecode)).language;
-                                //set text url
-                                bookReturned.Pages.Find(x => x.Number.Contains(pageid)).Languages
-                                   .Find(y => y.language.Contains(languagecode)).Text_Url = book.Pages.Find(a => a.Number.Contains(pageid)).Languages
-                                                                                                .Find(b => b.language.Contains(languagecode)).Text_Url;
-                                //set audio url
-                                bookReturned.Pages.Find(x => x.Number.Contains(pageid)).Languages
-                               .Find(y => y.language.Contains(languagecode)).Audio_Url = book.Pages.Find(a => a.Number.Contains(pageid)).Languages
-                                                                                             .Find(b => b.language.Contains(languagecode)).Audio_Url;
-                               
+                                bookReturned = book;
                                 //create document
                                 try
                                 {
@@ -210,7 +198,6 @@ namespace Functions
                                     return (ActionResult)new StatusCodeResult(500);
                                 }
                             }
-
                             else
                             {
                                 return (ActionResult)new NotFoundObjectResult(new { message = "Language code not found" });
