@@ -136,7 +136,7 @@ namespace Functions
                         {
                             Page p = bookReturned.Pages.Find(y => y.Number.Contains(pageid));
                             //if the language doesnt exist
-                            if (p.Languages.Find(z => z.language.Contains(languagecode)) == null)
+                            if (p.Languages[0] == null || p.Languages.Find(z => z.language.Contains(languagecode)) == null)
                             {
                                 try
                                 {
@@ -184,9 +184,8 @@ namespace Functions
                         if (bookReturned.Pages.Find(x => x.Number.Contains(pageid)) != null)
                         {
                             Page p = bookReturned.Pages.Find(y => y.Number.Contains(pageid));
-                            if (p.Languages.Find(z => z.language.Contains(languagecode)) != null)
+                            if (p.Languages[0] == null||p.Languages.Find(z => z.language.Contains(languagecode)) != null)
                             {
-
                                 bookReturned = book;
                                 //create document
                                 try
@@ -200,7 +199,6 @@ namespace Functions
                                     return (ActionResult)new StatusCodeResult(500);
                                 }
                             }
-
                             else
                             {
                                 return (ActionResult)new NotFoundObjectResult(new { message = "Language code not found" });
