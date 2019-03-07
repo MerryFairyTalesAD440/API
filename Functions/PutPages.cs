@@ -36,7 +36,7 @@ namespace Functions
             bookid = bookid.Replace(" ", "");
             pageid = pageid.Replace(" ", "");
             //only allow post methods
-            if (req.Method != HttpMethod.Get)
+            if (req.Method != HttpMethod.Put)
             {
                 return (ActionResult)new StatusCodeResult(405);
             }
