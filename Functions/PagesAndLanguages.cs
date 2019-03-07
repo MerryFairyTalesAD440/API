@@ -185,8 +185,19 @@ namespace Functions
                             Page p = bookReturned.Pages.Find(y => y.Number.Contains(pageid));
                             if (p.Languages.Find(z => z.language.Contains(languagecode)) != null)
                             {
-
-                                bookReturned = book;
+                                //set language
+                                bookReturned.Pages.Find(x => x.Number.Contains(pageid)).Languages
+                                    .Find(y => y.language.Contains(languagecode)).language = book.Pages.Find(a => a.Number.Contains(pageid)).Languages
+                                                                                                 .Find(b => b.language.Contains(languagecode)).language;
+                                //set text url
+                                bookReturned.Pages.Find(x => x.Number.Contains(pageid)).Languages
+                                   .Find(y => y.language.Contains(languagecode)).Text_Url = book.Pages.Find(a => a.Number.Contains(pageid)).Languages
+                                                                                                .Find(b => b.language.Contains(languagecode)).Text_Url;
+                                //set audio url
+                                bookReturned.Pages.Find(x => x.Number.Contains(pageid)).Languages
+                               .Find(y => y.language.Contains(languagecode)).Audio_Url = book.Pages.Find(a => a.Number.Contains(pageid)).Languages
+                                                                                             .Find(b => b.language.Contains(languagecode)).Audio_Url;
+                               
                                 //create document
                                 try
                                 {
