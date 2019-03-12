@@ -140,6 +140,15 @@ namespace Functions
                 //make the array at Pages into a list, delete the element, make pages equal the new list. 
                 List<Page> pageArr = nBook.Pages.ToList<Page>();
                 pageArr.RemoveAll(z => z.Number == pageid);
+               
+                //re-number pages after delete
+                if (pageArr.Count > 0){
+                    for (int i = 0; i < pageArr.Count; i++)
+                    {
+                        int temp = i + 1;
+                        pageArr[i].Number = temp.ToString();
+                    }
+                }
                 nBook.Pages = pageArr;
                 // =====================================================================================================
                 //                                         UPSERT TO COSMOS DB
