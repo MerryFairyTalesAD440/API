@@ -20,7 +20,7 @@ using Newtonsoft.Json.Linq;
 using Microsoft.AspNetCore.Http;
 
 
-//function to update a texturl for a book
+//function to delete a texturl for a book
 //@author francesco
 namespace Functions
 {
