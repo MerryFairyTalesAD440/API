@@ -48,7 +48,11 @@ namespace Functions
                         .Build();
             //dynamic data = JsonConvert.DeserializeObject(System.IO.File.ReadAllText(@"C:\Users\mvien\desktop\sample.json"));
             dynamic data = JsonConvert.DeserializeObject(requestBody);
-
+            if (!routeBookMatches(bookid, pageid, languagecode, data))
+            {
+                return (ActionResult)new NotFoundObjectResult("Route information does not match book!.");
+            }
+           
             //validate json
             if (validDocument(data))
             {
@@ -116,10 +120,6 @@ namespace Functions
                 book.Description = data?.description;
                 book.Title = data?.title;
 
-                if (!routeBookMatches(bookid, pageid, languagecode, data))
-                {
-                    return (ActionResult)new NotFoundObjectResult("Route information does not match book!.");
-                }
 
                 // if post
                 if (req.Method == HttpMethod.Post)
