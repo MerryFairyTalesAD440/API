@@ -18,21 +18,6 @@
     <PackageReference Include="MongoDB.Driver" Version="2.7.3" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="writeDoc.cs" Condition=" '$(EnableDefaultCompileItems)' == 'true' " />
-    <None Include="UpdateBook.cs" Condition=" '$(EnableDefaultCompileItems)' == 'true' " />
-    <None Include="PutPages.cs" Condition=" '$(EnableDefaultCompileItems)' == 'true' " />
-    <None Include="PostPage.cs" Condition=" '$(EnableDefaultCompileItems)' == 'true' " />
-    <None Include="PagesAndLanguages.cs" Condition=" '$(EnableDefaultCompileItems)' == 'true' " />
-    <None Include="getSAS.cs" Condition=" '$(EnableDefaultCompileItems)' == 'true' " />
-    <None Include="GetDeletePage.cs" Condition=" '$(EnableDefaultCompileItems)' == 'true' " />
-    <None Include="GetDeleteLanguage.cs" Condition=" '$(EnableDefaultCompileItems)' == 'true' " />
-    <None Include="getBooks.cs" Condition=" '$(EnableDefaultCompileItems)' == 'true' " />
-    <None Include="deleteBook.cs" Condition=" '$(EnableDefaultCompileItems)' == 'true' " />
-    <None Include="CreateContainer.cs" Condition=" '$(EnableDefaultCompileItems)' == 'true' " />
-    <None Include="ContainerUtil.cs" Condition=" '$(EnableDefaultCompileItems)' == 'true' " />
-    <None Include="AddBook.cs" Condition=" '$(EnableDefaultCompileItems)' == 'true' " />
-  </ItemGroup>
-  <ItemGroup>
     <None Update="host.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -43,18 +28,5 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="buildContainer.cs" />
-    <Compile Remove="writeDoc.cs" />
-    <Compile Remove="UpdateBook.cs" />
-    <Compile Remove="PutPages.cs" />
-    <Compile Remove="PostPage.cs" />
-    <Compile Remove="PagesAndLanguages.cs" />
-    <Compile Remove="getSAS.cs" />
-    <Compile Remove="GetDeletePage.cs" />
-    <Compile Remove="GetDeleteLanguage.cs" />
-    <Compile Remove="getBooks.cs" />
-    <Compile Remove="deleteBook.cs" />
-    <Compile Remove="CreateContainer.cs" />
-    <Compile Remove="ContainerUtil.cs" />
-    <Compile Remove="AddBook.cs" />
   </ItemGroup>
 </Project>
