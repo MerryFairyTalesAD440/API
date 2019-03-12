@@ -20,17 +20,17 @@ using Newtonsoft.Json.Linq;
 using Microsoft.AspNetCore.Http;
 
 
-//function to post a texturl for a book
+//function to get a texturl for a book
 //@author francesco
 namespace Functions
 {
-    public static class Text_a
+    public static class Text_d
     {
-        [FunctionName("postText")]
+        [FunctionName("getText")]
         [Consumes("application/json")]
         [Produces("application/json")]
         public static async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous,
-        "post",
+        "get",
         Route = "books/{bookId}/pages/{pageId}/languages/{languageCode}/text")]
         HttpRequest req,
         string bookid,
@@ -40,7 +40,8 @@ namespace Functions
         ExecutionContext context)
         {
             var status = (StatusCodeResult)new StatusCodeResult(200);
-            string method = req.Method;
+            string result = null;
+
             try
             {
                 log.LogInformation("Http function to POST texturl");
@@ -101,29 +102,29 @@ namespace Functions
                         var documents = dbClient.CreateDocumentQuery(collectionUri, query, crossPartition).ToList();
                         log.LogInformation($"document retrieved -> {documents.Count().ToString()}");
 
-                        //insert
+                        //read from db
                         Book b = documents.ElementAt(0);
                         Page p = b.Pages.ElementAt(int.Parse(pageid) - 1);
                         for (int j = 0; j < p.Languages.Count(); j++)
                         {
                             if (p.Languages.ElementAt(j).language.Equals(languagecode))
                             {
-                                p.Languages.ElementAt(j).Text_Url = data.pages[int.Parse(pageid) - 1].languages[j].text_url.ToString();
+                                //if nothing crashed then assign text_url to result
+                                result = $"200 text_url={p.Languages.ElementAt(j).Text_Url}"; //read success
+                                log.LogInformation($"url retrieved -> {p.Languages.ElementAt(j).Text_Url}");
                             }
                         }
 
-                        var result = await dbClient.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), b);
-                        log.LogInformation($"document updated -> {result}");
-                        status = (StatusCodeResult)new StatusCodeResult(200); //db write successful
+                        status = (null != result ? new StatusCodeResult(200) : new StatusCodeResult(404)); 
 
                     }
                     catch (Exception wrt)
                     {
-                        status = (StatusCodeResult)new StatusCodeResult(404); //document not found
+                        status = (StatusCodeResult)new StatusCodeResult(404); //read failed
                     }
                 }
                 else
-                { 
+                {
                     status = (StatusCodeResult)new StatusCodeResult(400);
                 }
             }
@@ -132,7 +133,7 @@ namespace Functions
                 status = (StatusCodeResult)new StatusCodeResult(400);
             }
 
-            return status;
+            return (null != result ? new ObjectResult(result) : new ObjectResult(status.StatusCode));
         }
     }
 }

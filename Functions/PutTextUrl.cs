@@ -20,17 +20,17 @@ using Newtonsoft.Json.Linq;
 using Microsoft.AspNetCore.Http;
 
 
-//function to post a texturl for a book
+//function to update a texturl for a book
 //@author francesco
 namespace Functions
 {
-    public static class Text_a
+    public static class Text_c
     {
-        [FunctionName("postText")]
+        [FunctionName("putText")]
         [Consumes("application/json")]
         [Produces("application/json")]
         public static async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous,
-        "post",
+        "put",
         Route = "books/{bookId}/pages/{pageId}/languages/{languageCode}/text")]
         HttpRequest req,
         string bookid,
@@ -43,7 +43,7 @@ namespace Functions
             string method = req.Method;
             try
             {
-                log.LogInformation("Http function to POST texturl");
+                log.LogInformation("Http function to PUT texturl");
 
                 //get request body
                 string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
@@ -123,7 +123,7 @@ namespace Functions
                     }
                 }
                 else
-                { 
+                {
                     status = (StatusCodeResult)new StatusCodeResult(400);
                 }
             }

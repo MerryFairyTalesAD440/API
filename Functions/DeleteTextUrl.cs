@@ -20,17 +20,17 @@ using Newtonsoft.Json.Linq;
 using Microsoft.AspNetCore.Http;
 
 
-//function to post a texturl for a book
+//function to delete a texturl for a book
 //@author francesco
 namespace Functions
 {
-    public static class Text_a
+    public static class Text_b
     {
-        [FunctionName("postText")]
+        [FunctionName("deleteText")]
         [Consumes("application/json")]
         [Produces("application/json")]
         public static async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous,
-        "post",
+        "delete",
         Route = "books/{bookId}/pages/{pageId}/languages/{languageCode}/text")]
         HttpRequest req,
         string bookid,
@@ -40,10 +40,10 @@ namespace Functions
         ExecutionContext context)
         {
             var status = (StatusCodeResult)new StatusCodeResult(200);
-            string method = req.Method;
+            //string method = req.Method;
             try
             {
-                log.LogInformation("Http function to POST texturl");
+                log.LogInformation("Http function to DELETE texturl");
 
                 //get request body
                 string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
@@ -108,7 +108,7 @@ namespace Functions
                         {
                             if (p.Languages.ElementAt(j).language.Equals(languagecode))
                             {
-                                p.Languages.ElementAt(j).Text_Url = data.pages[int.Parse(pageid) - 1].languages[j].text_url.ToString();
+                                p.Languages.ElementAt(j).Text_Url = null; 
                             }
                         }
 
@@ -123,7 +123,7 @@ namespace Functions
                     }
                 }
                 else
-                { 
+                {
                     status = (StatusCodeResult)new StatusCodeResult(400);
                 }
             }
