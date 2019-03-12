@@ -20,11 +20,11 @@ using Newtonsoft.Json.Linq;
 using Microsoft.AspNetCore.Http;
 
 
-//function to post a texturl for a book
+//function to update a texturl for a book
 //@author francesco
 namespace Functions
 {
-    public static class Text_a
+    public static class Text
     {
         [FunctionName("postText")]
         [Consumes("application/json")]
