@@ -18,7 +18,6 @@ before_install:
  - echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ wheezy main" | sudo tee /etc/apt/sources.list.d/azure-cli.list
  - curl -L https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
  - sudo apt-get install apt-transport-https
- - sudo apt-get update && sudo apt-get install azure-cli
 
 script:
  - ls
@@ -26,7 +25,9 @@ script:
 deploy:
 - provider: script
   script: git fetch && git push https://$AZURE_WA_USERNAME:$AZURE_WA_PASSWORD@$AZURE_DEV_SITENAME.scm.azurewebsites.net:443/$AZURE_DEV_SITENAME.git HEAD:refs/heads/master
-  on: develop
+  on: 
+   branch: develop
 - provider: script
   script: git fetch && git push https://$AZURE_WA_USERNAME:$AZURE_WA_PASSWORD@$AZURE_PROD_SITENAME.scm.azurewebsites.net:443/$AZURE_PROD_SITENAME.git HEAD:refs/heads/master
-  on: master
+  on:
+   branch: master

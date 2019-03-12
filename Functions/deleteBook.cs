@@ -29,37 +29,44 @@ namespace Functions
     {
         [FunctionName("deleteBook")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "delete", Route = "books/{bookId}")] HttpRequestMessage req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "books/{bookId}")] HttpRequestMessage req,
             string bookid,
             ExecutionContext context,
             ILogger log)
         {
             log.LogInformation("C# HTTP trigger function to delete book by id.");
 
+            var config = new ConfigurationBuilder()
+                       .SetBasePath(context.FunctionAppDirectory)
+                       .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
+                       .AddEnvironmentVariables()
+                       .Build();
+
 
             //apply for key vault client
             var serviceTokenProvider = new AzureServiceTokenProvider();
             var keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(serviceTokenProvider.KeyVaultTokenCallback));
 
+            IQueryable<Book> bookQuery;
+
             //storage variables for secrets
             SecretBundle secrets;
             String cosmosEndpointUrl = String.Empty;
             String cosmosAuthorizationKey = String.Empty;
-            String databaseId = String.Empty;
+            String database = String.Empty;
             String collection = String.Empty;
 
 
+            // Connect to vault client
             try
             {
-
-                secrets = await keyVaultClient.GetSecretAsync("https://maria-key-vault.vault.azure.net/secrets/cosmos-connection/");
-
+                secrets = await keyVaultClient.GetSecretAsync($"{config["KEY_VAULT_URI"]}secrets/{config["COSMOS_NAME"]}/");
 
                 //parse json stored.
                 JObject details = JObject.Parse(secrets.Value.ToString());
                 cosmosEndpointUrl = (string)details["COSMOS_URI"];
                 cosmosAuthorizationKey = (string)details["COSMOS_KEY"];
-                databaseId = (string)details["COSMOS_DB"];
+                database = (string)details["COSMOS_DB"];
                 collection = (string)details["COSMOS_COLLECTION"];
 
             }
@@ -68,64 +75,49 @@ namespace Functions
                 return new ForbidResult("Unable to access secrets in vault!" + ex.Message);
             }
 
-           
 
-            try
-            {
+            //set options client and query
+            FeedOptions queryOptions = new FeedOptions { EnableCrossPartitionQuery = true };
 
+            DocumentClient client = new DocumentClient(new Uri(cosmosEndpointUrl), cosmosAuthorizationKey);
 
-                DocumentClient client = new DocumentClient(new Uri(cosmosEndpointUrl), cosmosAuthorizationKey);
+            try {
 
-                var collectionLink = UriFactory.CreateDocumentCollectionUri(databaseId, collection);
+             
+                bookQuery = client.CreateDocumentQuery<Book>(UriFactory.CreateDocumentCollectionUri(database, collection),
+                    "SELECT * FROM Books b  WHERE b.id = \'" + bookid + "\'", queryOptions);
 
-                var query = "SELECT * FROM Books b WHERE b.id = \'" + bookid + "\'";
+                List<Book> bookList = bookQuery.ToList<Book>();
 
-                log.LogInformation("query: " + query);
+                if (bookList.Count == 0)
+                {
+                    log.LogInformation("Book not found.");
+                    return (ActionResult)new StatusCodeResult(404);
+                }
 
-                // Currently getting issue about EnableCrossPartitionQuery disabled.
-                FeedOptions queryOptions = new FeedOptions { EnableCrossPartitionQuery = true };
-
-
-                log.LogInformation("queryOptions: " + queryOptions);
-
-
-                var document = client.CreateDocumentQuery(collectionLink, query, queryOptions).ToList();
-
-                log.LogInformation("document: " + document);
-
-
-                // Getting the book element
-                Book book = document.ElementAt(0);
-
-                log.LogInformation("book: " + book);
-
-                // Book ID not found 
-                if (book.Id == null) { 
-                    return (ActionResult)new StatusCodeResult(404); 
+                foreach (var book in bookList)
+                {
+                        Uri docUri = UriFactory.CreateDocumentUri(database, collection, book.Id);
+                        
+                        // Need to provide the partitionKey here
+                        // The key can by found from database > collection > scale and settings partition key
+                        // The partition key is: /title 
+                        await client.DeleteDocumentAsync(docUri, new RequestOptions { PartitionKey = new PartitionKey(book.Title) });
+                        Console.WriteLine(@"Deleted: {0}", book.Id);
                 }
 
 
-                Document doc = client.CreateDocumentQuery(collectionLink)
-                            .Where(d => d.Id == bookid)
-                            .AsEnumerable()
-                            .FirstOrDefault();
 
-                log.LogInformation("doc: " + doc);
-
-                await client.DeleteDocumentAsync(doc.SelfLink);
-
-                return (ActionResult)new OkObjectResult("Successfully deleted {0} : " + bookid);
-
-            }
-            catch (Exception ex)
-            {
-                log.LogError(ex.Message);
-
+            } catch (Exception ex) {
+                log.LogError("Unable to delete book: " + ex.Message);
                 return (ActionResult)new StatusCodeResult(500);
             }
+
+
+            return (ActionResult)new OkObjectResult("Successfully deleted bookId : " + bookid);
+
         }
 
     }
-
 
 }

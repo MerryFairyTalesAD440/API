@@ -14,6 +14,10 @@ using System.Net;
 using Microsoft.Azure.Documents;
 using System.Linq;
 using System.Collections.Generic;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Azure.Services.AppAuthentication;
+using Microsoft.Azure.KeyVault;
+using Microsoft.Azure.KeyVault.Models;
 
 namespace Functions
 {
@@ -27,20 +31,49 @@ namespace Functions
             // convert "pagenumber" to an integer
             int pagenumber = Convert.ToInt32(pageid);
 
-            // =====================================================================================================
-            //                                            GET MY VARIABLES 
-            // =====================================================================================================
-            string cosmosURI          = System.Environment.GetEnvironmentVariable("CosmosURI");
-            string cosmosKey          = System.Environment.GetEnvironmentVariable("CosmosKey");
-            string cosmosDBName       = System.Environment.GetEnvironmentVariable("CosmosDBName");
-            string cosmosDBCollection = System.Environment.GetEnvironmentVariable("CosmosDBCollection");
+            //set configuration
+            var config = new ConfigurationBuilder()
+                        .SetBasePath(context.FunctionAppDirectory)
+                        .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
+                        .AddEnvironmentVariables()
+                        .Build();
+
+            //apply for key vault client
+            var serviceTokenProvider = new AzureServiceTokenProvider();
+            var keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(serviceTokenProvider.KeyVaultTokenCallback));
+
+            //storage variables for secrets
+            SecretBundle secrets;
+            String uri = String.Empty;
+            String key = String.Empty;
+            String database = String.Empty;
+            String collection = String.Empty;
+            //try and get storage uri
+
+            try
+            {
+                //storage account is the keyvault key
+                secrets = await keyVaultClient.GetSecretAsync($"{config["KEY_VAULT_URI"]}secrets/{config["COSMOS_NAME"]}/");
+                //parse json stored in keyvalut
+                JObject details = JObject.Parse(secrets.Value.ToString());
+                uri = (string)details["COSMOS_URI"];
+                key = (string)details["COSMOS_KEY"];
+                database = (string)details["COSMOS_DB"];
+                collection = (string)details["COSMOS_COLLECTION"];
+            }
+
+            //display unauthorize error.  Im not sure which code to return for this catch
+            catch (KeyVaultErrorException ex)
+            {
+                return new ForbidResult("Unable to access secrets in vault!");
+            }
 
             // =====================================================================================================
             //                                          CONNECT TO COSMOS DB
             // =====================================================================================================
-            DocumentClient client    = new DocumentClient(new Uri(cosmosURI), cosmosKey);
+            DocumentClient client    = new DocumentClient(new Uri(uri), key);
             FeedOptions queryOptions = new FeedOptions { EnableCrossPartitionQuery = true };
-            var collectionLink       = UriFactory.CreateDocumentCollectionUri(cosmosDBName, cosmosDBCollection);
+            var collectionLink       = UriFactory.CreateDocumentCollectionUri(database, collection);
             var query                = "SELECT * FROM Books b WHERE b.id = \'" + bookid + "\'";
             var document             = client.CreateDocumentQuery(collectionLink, query, queryOptions).ToList();
             log.LogInformation(document.Count.ToString());
@@ -59,7 +92,9 @@ namespace Functions
             if (oBook.Pages.Count == 0) { return (ActionResult)new StatusCodeResult(404); }
 
             // Bad page input
-            if (pagenumber < 1 || pagenumber > oBook.Pages.Count()) { return (ActionResult)new StatusCodeResult(404); }
+            if (pagenumber < 1 || oBook.Pages.Find(x => x.Number.Contains(pageid)) == null) {
+                return (ActionResult)new StatusCodeResult(404);
+            }
 
             // ========================================================================================================
             // ============================================   IF - GET   ==============================================
@@ -74,7 +109,7 @@ namespace Functions
                 if (oBook.Id != null)
                 {
                     //the Pages[] is indexed from 0 and the pages start at 1, so I minus one to counter it
-                    string pages = JsonConvert.SerializeObject(oBook.Pages[pagenumber - 1], Formatting.Indented);
+                    string pages = JsonConvert.SerializeObject(oBook.Pages.Find(y => y.Number.Contains(pageid)), Formatting.Indented);
                     return (ActionResult)new OkObjectResult(pages);
                 }
                 else
@@ -104,22 +139,24 @@ namespace Functions
 
                 //make the array at Pages into a list, delete the element, make pages equal the new list. 
                 List<Page> pageArr = nBook.Pages.ToList<Page>();
-                pageArr.RemoveAt(pagenumber - 1);
-                nBook.Pages = pageArr;
-
-                //go through a list of pages, setting the page number to the proper location
-                for (int i = 0; i < nBook.Pages.Count; i++)
-                {
-                    nBook.Pages[i].Number = (i + 1).ToString();
+                pageArr.RemoveAll(z => z.Number == pageid);
+               
+                //re-number pages after delete
+                if (pageArr.Count > 0){
+                    for (int i = 0; i < pageArr.Count; i++)
+                    {
+                        int temp = i + 1;
+                        pageArr[i].Number = temp.ToString();
+                    }
                 }
-
+                nBook.Pages = pageArr;
                 // =====================================================================================================
                 //                                         UPSERT TO COSMOS DB
                 // =====================================================================================================
-                var result = await client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(cosmosDBName, cosmosDBCollection), nBook);
+                var result = await client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), nBook);
                 log.LogInformation($"{result}");
 
-                return (ActionResult)new StatusCodeResult(200);
+                return (ActionResult)new OkObjectResult(new { message = "Page successfully deleted."});
             }
             //not really needed, but I need a return statement
             else
