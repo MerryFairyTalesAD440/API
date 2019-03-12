@@ -48,7 +48,11 @@ namespace Functions
                         .Build();
             //dynamic data = JsonConvert.DeserializeObject(System.IO.File.ReadAllText(@"C:\Users\mvien\desktop\sample.json"));
             dynamic data = JsonConvert.DeserializeObject(requestBody);
-
+            if (!routeBookMatches(bookid, pageid, languagecode, data))
+            {
+                return (ActionResult)new NotFoundObjectResult("Route information does not match book!.");
+            }
+           
             //validate json
             if (validDocument(data))
             {
@@ -116,10 +120,6 @@ namespace Functions
                 book.Description = data?.description;
                 book.Title = data?.title;
 
-                if (!routeBookMatches(bookid, pageid, languagecode, data))
-                {
-                    return (ActionResult)new NotFoundObjectResult("Route information does not match book!.");
-                }
 
                 // if post
                 if (req.Method == HttpMethod.Post)
@@ -135,7 +135,7 @@ namespace Functions
                         {
                             Page p = bookReturned.Pages.Find(y => y.Number.Contains(pageid));
                             //if the language doesnt exist
-                            if (p.Languages.Find(z => z.language.Contains(languagecode)) == null)
+                            if (p.Languages[0] == null || p.Languages.Find(z => z.language.Contains(languagecode)) == null)
                             {
                                 try
                                 {
@@ -183,9 +183,8 @@ namespace Functions
                         if (bookReturned.Pages.Find(x => x.Number.Contains(pageid)) != null)
                         {
                             Page p = bookReturned.Pages.Find(y => y.Number.Contains(pageid));
-                            if (p.Languages.Find(z => z.language.Contains(languagecode)) != null)
+                            if (p.Languages[0] == null||p.Languages.Find(z => z.language.Contains(languagecode)) != null)
                             {
-
                                 bookReturned = book;
                                 //create document
                                 try
@@ -199,7 +198,6 @@ namespace Functions
                                     return (ActionResult)new StatusCodeResult(500);
                                 }
                             }
-
                             else
                             {
                                 return (ActionResult)new NotFoundObjectResult(new { message = "Language code not found" });
