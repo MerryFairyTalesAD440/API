@@ -187,7 +187,7 @@ namespace Functions
         {
             bool valid = false;
             if (data?.title != null && data?.description != null && data?.author != null
-                && data?.cover_image != null && data?.pages != null)
+                && data?.pages != null)
             {
                 valid = true;
             }

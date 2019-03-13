@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Functions
 {
-    [JsonObject]
+    [JsonObject] 
     class Language
     {
         [JsonProperty(PropertyName = "language")]

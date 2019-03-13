@@ -19,7 +19,7 @@ namespace Functions
 {
     public static class PagesAndLanguages
     {
-        [FunctionName("PagesAndLanguages")]
+        [FunctionName("PostPutPagesAndLanguages")]
         [Consumes("application/json")]
         [Produces("application/json")]
         public static async Task<IActionResult> Run(
@@ -237,7 +237,7 @@ namespace Functions
         {
             bool valid = false;
             if (data?.title != null && data?.description != null && data?.author != null
-                && data?.cover_image != null && data?.pages != null)
+                 && data?.pages != null)
             {
                 valid = true;
             }

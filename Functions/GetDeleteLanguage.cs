@@ -94,8 +94,15 @@ namespace Functions
                 return (ActionResult)new StatusCodeResult(404);
             }
 
-            // No resource found with that language
-            if (oBook.Pages.Find(y=>y.Number.Contains(pageid)).Languages.Find(z => z.language.Contains(languagecode)) == null)
+            //check if languages are null
+            Page page = oBook.Pages.Find(y => y.Number.Contains(pageid));
+            if (page != null && page.Languages[0] == null)
+            {
+                return (ActionResult)new StatusCodeResult(404);
+            }
+
+                // No resource found with that language if language array isnt null
+                if (oBook.Pages.Find(y=>y.Number.Contains(pageid)).Languages.Find(z => z.language.Contains(languagecode)) == null)
             {
                 return (ActionResult)new StatusCodeResult(404);
             }

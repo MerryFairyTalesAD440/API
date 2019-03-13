@@ -101,13 +101,39 @@ namespace Functions
             }
             else
             {
+                int length;
                 //get the page array length
-                int length = books[0].Pages.Count;
-                //create a new page with length +1
-                Page page = new Page();
-                length += 1;
-                page.Number = length.ToString();
-                books[0].Pages.Add(page);
+                if (books[0].Pages != null)
+                {
+                     length = books[0].Pages.Count;
+                    if (books[0].Pages[0] != null)
+                    {
+
+
+                        //create a new page with length +1
+                        Page page = new Page();
+                        length += 1;
+                        page.Number = length.ToString();
+                        books[0].Pages.Add(page);
+                    }
+                    else
+                    {
+                        List<Page> pages = new List<Page>();
+                        Page page = new Page();
+                        page.Number = "1";
+                        pages.Add(page);
+                        books[0].Pages = pages;
+                        length = 1;
+                    }
+                }
+                else {
+                    List<Page> pages = new List<Page>();
+                    Page page = new Page();
+                    page.Number = "1";
+                    pages.Add(page);
+                    books[0].Pages = pages;
+                    length = 1;
+                }
                 //update document in db if route variables and returned book matches
                 await client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), books[0]);
                 //return page number 
