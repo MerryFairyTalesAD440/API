@@ -47,6 +47,10 @@ namespace Functions
             String database = String.Empty;
             String collection = String.Empty;
 
+            //variables for dev storage
+            SecretBundle storageSecrets;
+            String storageConnectionString = String.Empty;
+
             var config = new ConfigurationBuilder()
                        .SetBasePath(context.FunctionAppDirectory)
                        .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
@@ -103,8 +107,23 @@ namespace Functions
             if (page.Image_Url != null)
             {
 
+                // Connect to vault client to get secrets for storage container
+                try
+                {
+                    storageSecrets = await keyVaultClient.GetSecretAsync($"{config["KEY_VAULT_URI"]}secrets/{config["STORAGE_NAME"]}/");
+
+                    //parse json stored.
+                    JObject details = JObject.Parse(storageSecrets.Value);
+                    storageConnectionString = (string)details["STORAGE_CONNECTION_STRING"];
+
+                }
+                catch (KeyVaultErrorException ex)
+                {
+                    return new ForbidResult("Unable to access secrets in vault!" + ex.Message);
+                }
+
                 // Check whether the connection string can be parsed.
-                if (CloudStorageAccount.TryParse(config["StorageConnectionString"], out storageAccount))
+                if (CloudStorageAccount.TryParse(storageConnectionString, out storageAccount))
                 {
                     try
                     {
