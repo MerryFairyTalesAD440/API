@@ -25,9 +25,9 @@ using Newtonsoft.Json.Linq;
 
 namespace Functions
 {
-    public static class deleteBook
+    public static class DeleteBook
     {
-        [FunctionName("deleteBook")]
+        [FunctionName("DeleteBook")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "books/{bookId}")] HttpRequestMessage req,
             string bookid,

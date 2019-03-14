@@ -28,7 +28,7 @@ namespace Functions
     public static class GetBooks
     {
         /* GET /books - function to get or list all books. */
-        [FunctionName("books")]
+        [FunctionName("GetBooks")]
         [Consumes("application/json")]
         [Produces("application/json")]
         public static async Task<IActionResult> Run(
