@@ -41,7 +41,6 @@ namespace Functions
 
             this.FileData.Add(new MultipartFileData(headers, blob.Name));
 
-            //return blob.OpenWrite(); // error: CloudBlockBlob does not contain definition for OpenWrite
             return blob.OpenWriteAsync().Result;
         }
     }
