@@ -35,11 +35,8 @@ namespace Functions
 
             int pagenumber = Convert.ToInt32(pageid);
 
-            CloudStorageAccount storageAccount;
-            CloudBlobClient cloudBlobClient;
-            CloudBlobContainer cloudBlobContainer;
-            var fileName = String.Empty;
-            var container_images = "images";
+            string requestBody = await req.Content.ReadAsStringAsync();
+            dynamic data = JsonConvert.DeserializeObject(requestBody);
 
             //storage variables for secrets
             SecretBundle secrets;
@@ -47,11 +44,6 @@ namespace Functions
             String cosmosAuthorizationKey = String.Empty;
             String database = String.Empty;
             String collection = String.Empty;
-
-            //variables for dev storage
-            SecretBundle storageSecrets;
-            String storageUri = String.Empty;
-            String storageConnectionString = String.Empty;
 
             var config = new ConfigurationBuilder()
                        .SetBasePath(context.FunctionAppDirectory)
@@ -108,111 +100,10 @@ namespace Functions
             // ---- PUT method to update image in the container --- ///
             if (page.Image_Url != null)
             {
-                // Connect to vault client to get secrets for storage container
-                try
-                {
-                    storageSecrets = await keyVaultClient.GetSecretAsync($"{config["KEY_VAULT_URI"]}secrets/{config["STORAGE_NAME"]}/");
-
-                    //parse json stored.
-                    JObject details = JObject.Parse(storageSecrets.Value);
-                    storageUri = (string)details["STORAGE_URI"];
-                    storageConnectionString = (string)details["STORAGE_CONNECTION_STRING"];
-
-                }
-                catch (KeyVaultErrorException ex)
-                {
-                    return new ForbidResult("Unable to access secrets in vault!" + ex.Message);
-                }
-
-                // Check whether the connection string can be parsed.
-                if (CloudStorageAccount.TryParse(storageConnectionString, out storageAccount))
-                {
-                    try
-                    {
-                        log.LogInformation("Storage account accessed.");
-                        // If the connection string is valid, proceed with operations against Blob storage here.
-                        // Create the CloudBlobClient that represents the Blob storage endpoint for the storage account.
-                        cloudBlobClient = storageAccount.CreateCloudBlobClient();
-
-                        // Create a container called 'images' 
-                        cloudBlobContainer = cloudBlobClient.GetContainerReference(container_images);
-
-                        // In order to replace the image, need to delete the old image then create a new one.
-                        var guidPattern = "(\\{){0,1}[0-9a-fA-F]{8}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{12}(\\}){0,1}";
-                        var match = Regex.Match(page.Image_Url, guidPattern);
-                        var fileNameToDelete = match.Value;
-                        var blockBlob = cloudBlobContainer.GetBlockBlobReference(fileNameToDelete);
-
-                        /////// Start of Uploading a new file
-                        // Added so that we can create public access to the blob
-                        await cloudBlobContainer.CreateIfNotExistsAsync(
-                                  BlobContainerPublicAccessType.Blob,
-                                  new BlobRequestOptions(),
-                                  new OperationContext());
-
-                        var provider = new AzureStorageMultipartFormDataStreamProvider(cloudBlobContainer);
-
-                        try
-                        {
-                            await req.Content.ReadAsMultipartAsync(provider);
-                        }
-                        catch (Exception ex)
-                        {
-                            log.LogError("An error has occured. Details: " + ex.Message);
-                            return (ActionResult)new StatusCodeResult(400);
-                        }
-
-                        // Retrieve the filename of the file you have uploaded
-                        fileName = provider.FileData.FirstOrDefault()?.LocalFileName;
-                        if (string.IsNullOrEmpty(fileName))
-                        {
-                            log.LogError("An error has occured while uploading your file. Please try again.");
-                            return (ActionResult)new StatusCodeResult(500);
-                        }
-                        /////// End of uploading a new file
-
-
-
-                        /////// START of deleting the file in container
-                        try
-                        {
-                            // Deleting the block blob in the container
-                            await blockBlob.DeleteIfExistsAsync();
-                        }
-                        catch (Exception ex)
-                        {
-                            log.LogError("An error has occured. Details: " + ex.Message);
-                            return (ActionResult)new StatusCodeResult(500);
-                        }
-
-
-                        // Setting the image url to null in the json book blob
-                        page.Image_Url = null;
-                        await client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), book);
-                        //////// END of deleting file in container
-
-
-                    }
-                    catch (StorageException ex)
-                    {
-                        log.LogInformation("Error returned from the service: {0}", ex.Message);
-                        return (ActionResult)new StatusCodeResult(500);
-                    }
-
-
-                }
-                else
-                {
-                    // Otherwise, let the user know that they need to define the environment variable.
-                    log.LogInformation("Key Vault access failed. A connection string has not been " +
-                                       "defined in the system environment variables.");
-                    return (ActionResult)new StatusCodeResult(500);
-
-                }
-
 
                 // Updates the page image url in the book json blob
-                page.Image_Url = storageUri + container_images + "/" + fileName;
+                page.Image_Url = data?.image_url;
+
                 try {
                     await client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), book);
                 } catch (Exception ex) {
@@ -221,7 +112,7 @@ namespace Functions
                 }
 
 
-                return (ActionResult)new OkObjectResult($"File: {fileName} has successfully uploaded");
+                return (ActionResult)new OkObjectResult($"Page Image URL has successfully updated.");
             }
             else
             {

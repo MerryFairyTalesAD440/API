@@ -34,22 +34,12 @@ namespace Functions
 
             int pagenumber = Convert.ToInt32(pageid);
 
-            CloudStorageAccount storageAccount;
-            CloudBlobClient cloudBlobClient;
-            CloudBlobContainer cloudBlobContainer;
-            var fileName = String.Empty;
-            var container_images = "images";
-
             //storage variables for secrets
             SecretBundle secrets;
             String cosmosEndpointUrl = String.Empty;
             String cosmosAuthorizationKey = String.Empty;
             String database = String.Empty;
             String collection = String.Empty;
-
-            //variables for dev storage
-            SecretBundle storageSecrets;
-            String storageConnectionString = String.Empty;
 
             var config = new ConfigurationBuilder()
                        .SetBasePath(context.FunctionAppDirectory)
@@ -106,64 +96,21 @@ namespace Functions
             // ---- DELETE from blob container storage --- ///
             if (page.Image_Url != null)
             {
+                // Updates the page image url in the book json blob to set to null.
+                page.Image_Url = null;
 
-                // Connect to vault client to get secrets for storage container
                 try
                 {
-                    storageSecrets = await keyVaultClient.GetSecretAsync($"{config["KEY_VAULT_URI"]}secrets/{config["STORAGE_NAME"]}/");
-
-                    //parse json stored.
-                    JObject details = JObject.Parse(storageSecrets.Value);
-                    storageConnectionString = (string)details["STORAGE_CONNECTION_STRING"];
-
+                    await client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), book);
                 }
-                catch (KeyVaultErrorException ex)
+                catch (Exception ex)
                 {
-                    return new ForbidResult("Unable to access secrets in vault!" + ex.Message);
-                }
-
-                // Check whether the connection string can be parsed.
-                if (CloudStorageAccount.TryParse(storageConnectionString, out storageAccount))
-                {
-                    try
-                    {
-                        log.LogInformation("Storage account accessed.");
-                        // If the connection string is valid, proceed with operations against Blob storage here.
-                        // Create the CloudBlobClient that represents the Blob storage endpoint for the storage account.
-                        cloudBlobClient = storageAccount.CreateCloudBlobClient();
-
-                        // Create a container called 'images' 
-                        cloudBlobContainer = cloudBlobClient.GetContainerReference(container_images);
-                        var guidPattern = "(\\{){0,1}[0-9a-fA-F]{8}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{12}(\\}){0,1}";
-                        var match = Regex.Match(page.Image_Url, guidPattern);
-                        fileName = match.Value;
-                        var blockBlob = cloudBlobContainer.GetBlockBlobReference(fileName);
-
-                        // Deleting the block blob in the container
-                        await blockBlob.DeleteIfExistsAsync();
-
-                        // Setting the image url to null in the json book blob
-                        page.Image_Url = null;
-                        await client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), book);
-                        return (ActionResult)new OkObjectResult($"File: {fileName} has successfully deleted");
-
-                    }
-                    catch (StorageException ex)
-                    {
-                        log.LogError("Error returned from the service: {0}", ex.Message);
-                        return (ActionResult)new StatusCodeResult(400);
-                    }
-
-
-                }
-                else
-                {
-                    // Otherwise, let the user know that they need to define the environment variable.
-                    log.LogError("Key Vault access failed. A connection string has not been " +
-                                       "defined in the system environment variables.");
+                    log.LogError("Error returned when updating the page image: {0}", ex.Message);
                     return (ActionResult)new StatusCodeResult(500);
-
                 }
+
+
+                return (ActionResult)new OkObjectResult($"Page Image URL has successfully deleted.");
 
             }
             else
