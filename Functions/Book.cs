@@ -7,7 +7,7 @@ using System.Text;
 namespace Functions
 {
     [JsonObject]
-    class Book
+    public class Book
     {
         [JsonProperty(PropertyName = "id")]
         public String Id { get; set; }

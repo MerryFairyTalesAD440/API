@@ -16,19 +16,16 @@ using Microsoft.Azure.Services.AppAuthentication;
 using Microsoft.Azure.KeyVault;
 using Microsoft.Azure.KeyVault.Models;
 using Newtonsoft.Json.Linq;
-using System.Net;
-using Microsoft.Azure.Documents;
 
 namespace Functions
 {
-    public static class UpdateBook
+    public static class GetBook
     {
-        /* UpdateBook - Updates an existing book. */
-        [FunctionName("UpdateBook")]
-        [Consumes("application/json")]
+        /* GetBook - Retrieves an existing book. */
+        [FunctionName("GetBook")]
         [Produces("application/json")]
-        public static async Task<IActionResult> Edit(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "books/{bookid}")]HttpRequest req,
+        public static async Task<IActionResult> Retrieve(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "books/{bookid}")]HttpRequest req,
         ILogger log, ExecutionContext context, string bookid)
         {
             log.LogInformation("C# HTTP trigger function processed a request to update a book");
@@ -63,34 +60,22 @@ namespace Functions
             {
                 return new ForbidResult("Unable to access secrets in vault!");
             }
-
-            DocumentClient client = new DocumentClient(new Uri(uri), key);
-            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            var book = JsonConvert.DeserializeObject<Book>(requestBody);
-            if (!book.Id.Equals(bookid))
-            { 
-                return new BadRequestObjectResult("Book ids don't match."); // to prevent user from changing book id
-            }
-            log.LogInformation("Book passed to function: " + book.ToString());
-            log.LogInformation("Attempting to retrieve book from database - bookid: " + bookid);
-            var option = new FeedOptions { EnableCrossPartitionQuery = true };
-            Uri collectionUri = UriFactory.CreateDocumentCollectionUri(database, collection);
-            Document document = client.CreateDocumentQuery<Document>(collectionUri, option).Where(b => b.Id == bookid)
-                            .AsEnumerable().FirstOrDefault();
-            if (document == null)
             {
-                return new NotFoundResult();
+                log.LogInformation("C# HTTP trigger function processed a request to get a book");
+                log.LogInformation("Attempting to retrieve book from database - bookid: " + bookid);
+                DocumentClient client = new DocumentClient(new Uri(uri), key);
+                var option = new FeedOptions { EnableCrossPartitionQuery = true };
+                Uri collectionUri = UriFactory.CreateDocumentCollectionUri(database, collection);
+                dynamic document = client.CreateDocumentQuery<Book>(collectionUri, option).Where(b => b.Id == bookid)
+                                .AsEnumerable().FirstOrDefault();
+                if (document == null)
+                {
+                    return new NotFoundResult();
+                }
+                Book book = (dynamic)document;
+                return new OkObjectResult(book);
             }
-            Book originalBook = (dynamic)document;
-            if (!originalBook.Title.Equals(book.Title)) {
-                return new BadRequestObjectResult("The book title cannot be updated.");
-            }
-            // originalBook.Title = book.Title;
-            originalBook.Description = book.Description;
-            originalBook.Author = book.Author;
-            originalBook.Cover_Image = book.Cover_Image;
-            await client.ReplaceDocumentAsync(document.SelfLink, originalBook);
-            return new OkObjectResult("Book was updated successfully.");
         }
+
     }
 }
