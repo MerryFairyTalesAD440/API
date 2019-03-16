@@ -7,7 +7,7 @@ using System.Text;
 namespace Functions
 {
     [JsonObject] 
-    class Language
+    public class Language
     {
         [JsonProperty(PropertyName = "language")]
         public string language { get; set; }

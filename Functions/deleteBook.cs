@@ -22,6 +22,8 @@ using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Blob;
 
 namespace Functions
 {
@@ -56,6 +58,10 @@ namespace Functions
             String database = String.Empty;
             String collection = String.Empty;
 
+            // variables for storage
+            SecretBundle storageSecrets;
+            String storageUri = String.Empty;
+            String storageConnectionString = String.Empty;
 
             // Connect to vault client
             try
@@ -80,6 +86,7 @@ namespace Functions
             FeedOptions queryOptions = new FeedOptions { EnableCrossPartitionQuery = true };
 
             DocumentClient client = new DocumentClient(new Uri(cosmosEndpointUrl), cosmosAuthorizationKey);
+            List<Book> bookList = null;
 
             try {
 
@@ -87,7 +94,7 @@ namespace Functions
                 bookQuery = client.CreateDocumentQuery<Book>(UriFactory.CreateDocumentCollectionUri(database, collection),
                     "SELECT * FROM Books b  WHERE b.id = \'" + bookid + "\'", queryOptions);
 
-                List<Book> bookList = bookQuery.ToList<Book>();
+                bookList = bookQuery.ToList<Book>();
 
                 if (bookList.Count == 0)
                 {
@@ -113,6 +120,54 @@ namespace Functions
                 return (ActionResult)new StatusCodeResult(500);
             }
 
+            // Delete the storage container associated with the book
+            Book deletedBook = bookList.ElementAt(0);
+            String containerName = deletedBook.Title;
+            log.LogInformation(".");
+            CloudStorageAccount storageAccount = null;
+            CloudBlobContainer cloudBlobContainer = null;
+
+            try
+            {
+                storageSecrets = await keyVaultClient.GetSecretAsync($"{config["KEY_VAULT_URI"]}secrets/{config["STORAGE_NAME"]}/");
+                JObject details = JObject.Parse(storageSecrets.Value);
+                storageUri = (string)details["STORAGE_URI"];
+                storageConnectionString = (string)details["STORAGE_CONNECTION_STRING"];
+            }
+            catch (KeyVaultErrorException ex)
+            {
+                return new ForbidResult("Unable to access secrets in vault!" + ex.Message);
+            }
+
+            if (CloudStorageAccount.TryParse(storageConnectionString, out storageAccount))
+            {
+                try
+                {
+                    log.LogInformation("Storage account accessed.");
+                    CloudBlobClient cloudBlobClient = storageAccount.CreateCloudBlobClient();
+
+                    // Fix the string to make it comply with the rules
+                    containerName = containerName.ToLower();
+                    containerName = containerName.Replace(" ", "-");
+
+                    cloudBlobContainer = cloudBlobClient.GetContainerReference(containerName);
+                    await cloudBlobContainer.DeleteIfExistsAsync();
+                    log.LogInformation("Container associated with deleted book was deleted.");
+
+                }
+                catch (StorageException ex)
+                {
+                    log.LogInformation("Error returned from the service: {0}", ex.Message);
+                    return (ActionResult)new StatusCodeResult(500);
+                }
+
+            }
+            else
+            {
+                log.LogInformation("Key Vault access failed.");
+                return (ActionResult)new StatusCodeResult(500);
+
+            }
 
             return (ActionResult)new OkObjectResult("Successfully deleted bookId : " + bookid);
 
