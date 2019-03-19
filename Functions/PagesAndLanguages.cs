@@ -142,7 +142,13 @@ namespace Functions
                                     //update book language
                                     Language lang = new Language();
                                     lang.language = languagecode;
-                                    bookReturned.Pages.Find(y => y.Number.Contains(pageid)).Languages.Add(lang);
+                                    if (bookReturned.Pages.Find(y => y.Number.Contains(pageid)).Languages[0] != null)
+                                    {
+                                        bookReturned.Pages.Find(y => y.Number.Contains(pageid)).Languages.Add(lang);
+                                    }
+                                    else {
+                                        bookReturned.Pages.Find(y => y.Number.Contains(pageid)).Languages[0] = lang;
+                                    }
                                     //create document
                                     await client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), bookReturned);
                                     return (ActionResult)new OkObjectResult(new { message = "Language code added to page: " + pageid, language = languagecode });
