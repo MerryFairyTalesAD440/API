@@ -49,10 +49,12 @@ namespace Functions
                         .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
                         .AddEnvironmentVariables()
                         .Build();
+            log.LogInformation("Got environment variables");
 
             //access azure keyvault
             var serviceTokenProvider = new AzureServiceTokenProvider();
             var keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(serviceTokenProvider.KeyVaultTokenCallback));
+            log.LogInformation("key vault accessed");
 
             //storage variables for secrets
             SecretBundle secrets;
