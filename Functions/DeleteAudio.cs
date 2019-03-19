@@ -90,7 +90,7 @@ namespace Functions
                 var collectionUri = UriFactory.CreateDocumentCollectionUri(database, collection);
                 var queryString = "SELECT * FROM Books b WHERE b.id=\"" + bookid + "\"";
                 var crossPartition = new FeedOptions { EnableCrossPartitionQuery = true };
-                var query = dbClient.CreateDocumentQuery<Book>(collectionUri, queryString, crossPartition);
+                var query = dbClient.CreateDocumentQuery<Book>(collectionUri, queryString, crossPartition).ToList();
                 log.LogInformation($"document retrieved -> {query.Count().ToString()}");
 
                 List<Book> books = query.ToList<Book>();
