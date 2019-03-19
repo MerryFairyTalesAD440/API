@@ -25,7 +25,7 @@ namespace Functions
     {
         [FunctionName("DeletePageImage")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "books/{bookid}/pages/{pageid}/imageurl")] HttpRequestMessage req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "books/{bookid}/pages/{pageid}/image")] HttpRequestMessage req,
             ExecutionContext context,
             string bookid, string pageid,
             ILogger log)
