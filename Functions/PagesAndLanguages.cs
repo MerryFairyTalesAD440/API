@@ -142,7 +142,7 @@ namespace Functions
                                     //update book language
                                     Language lang = new Language();
                                     lang.language = languagecode;
-                                    if (bookReturned.Pages.Find(y => y.Number.Contains(pageid)).Languages[0] != null)
+                                    if (p.Languages[0] != null)
                                     {
                                         bookReturned.Pages.Find(y => y.Number.Contains(pageid)).Languages.Add(lang);
                                     }
