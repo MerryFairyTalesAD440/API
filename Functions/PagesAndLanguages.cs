@@ -147,7 +147,7 @@ namespace Functions
                                         bookReturned.Pages.Find(y => y.Number.Contains(pageid)).Languages.Add(lang);
                                     }
                                     else {
-                                        bookReturned.Pages.Find(y => y.Number.Contains(pageid)).Languages[0] = lang;
+                                        bookReturned.Pages.Find(y => y.Number.Contains(pageid)).Languages[0] = lang; 
                                     }
                                     //create document
                                     await client.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), bookReturned);
