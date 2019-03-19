@@ -34,8 +34,6 @@ namespace Functions
         HttpRequest req, string bookid, string pageid, string languagecode, ILogger log, ExecutionContext context)
         {
             log.LogInformation("Http function to delete audio");
-            //declare query
-            IQueryable<Book> query;
             //remove spaces from bookid
             bookid = bookid.Replace(" ", "");
 
@@ -87,42 +85,46 @@ namespace Functions
 
             try
             {
+                log.LogInformation("running query");
                 //setup query, search by bookid to find the book
                 var collectionUri = UriFactory.CreateDocumentCollectionUri(database, collection);
                 var queryString = "SELECT * FROM Books b WHERE b.id=\"" + bookid + "\"";
                 var crossPartition = new FeedOptions { EnableCrossPartitionQuery = true };
-                query = dbClient.CreateDocumentQuery<Book>(collectionUri, queryString, crossPartition);
-                //log.LogInformation($"document retrieved -> {documents.Count().ToString()}");
-            }
-            catch (Exception)
-            {
-                return (ActionResult)new StatusCodeResult(500);
-            }
-            List<Book> books = query.ToList<Book>();
+                var query = dbClient.CreateDocumentQuery<Book>(collectionUri, queryString, crossPartition);
+                log.LogInformation($"document retrieved -> {query.Count().ToString()}");
 
-            if (books.Count == 0)
-            {
-                return (ActionResult)new NotFoundObjectResult(new { message = "Book ID not found" });
-            }
-            else
-            {
-                //set the book to the first index in the list of books
-                Book b = books[0];
+                List<Book> books = query.ToList<Book>();
 
-                //delete language from the specific page we're interested in
-                Page p = b.Pages.ElementAt(int.Parse(bookid) - 1);
-                foreach (Language l in p.Languages)
+                if (books.Count == 0)
                 {
-                    if (l.language.Equals(languagecode))
-                    {
-                        l.Audio_Url = null;
-                    }
+                    return (ActionResult)new NotFoundObjectResult(new { message = "Book ID not found" });
                 }
-                //update document in db
-                var result = await dbClient.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), b);
-                //return success message
-                return (ActionResult)new OkObjectResult($"200, DB write successful -> , {data}");
+                else
+                {
+                    //set the book to the first index in the list of books
+                    Book b = books[0];
 
+                    //delete language from the specific page we're interested in
+                    Page p = b.Pages.ElementAt(int.Parse(bookid) - 1);
+                    foreach (Language l in p.Languages)
+                    {
+                        if (l.language.Equals(languagecode))
+                        {
+                            l.Audio_Url = null;
+                        }
+                    }
+
+                    //update document in db
+                    var result = await dbClient.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(database, collection), b);
+                    //return success message
+                    return (ActionResult)new OkObjectResult($"200, DB write successful -> , {data}");
+
+                }
+            }
+            catch (Exception ex)
+            {
+                log.LogInformation("exception: " + ex);
+                return (ActionResult)new StatusCodeResult(500);
             }
         }
     }
