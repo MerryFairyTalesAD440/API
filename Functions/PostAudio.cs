@@ -39,12 +39,6 @@ namespace Functions
             //remove spaces from bookid
             bookid = bookid.Replace(" ", "");
 
-            //only allow post methods
-            if (req.Method != HttpMethod.Post)
-            {
-                return (ActionResult)new StatusCodeResult(405);
-            }
-
             //get request body
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             dynamic data = JsonConvert.DeserializeObject(requestBody);
@@ -76,7 +70,7 @@ namespace Functions
 
             //get the audio_url from the data
             Page page = data.Pages.ElementAt(int.Parse(bookid) - 1);
-            foreach (Language l in page)
+            foreach (Language l in page.Languages)
             {
                 if (l.language.Equals(languagecode))
                 {
@@ -96,7 +90,7 @@ namespace Functions
                 collection = (string)details["COSMOS_COLLECTION"];
             }
             //display error if key vault access fails
-            catch (KeyVaultErrorException ex)
+            catch (KeyVaultErrorException)
             {
                 return new ForbidResult("Unable to access secrets in vault!");
             }
@@ -113,7 +107,7 @@ namespace Functions
                 query = dbClient.CreateDocumentQuery<Book>(collectionUri, queryString, crossPartition);
                 //log.LogInformation($"document retrieved -> {documents.Count().ToString()}");
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return (ActionResult)new StatusCodeResult(500);
             }

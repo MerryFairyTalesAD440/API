@@ -39,12 +39,6 @@ namespace Functions
             //remove spaces from bookid
             bookid = bookid.Replace(" ", "");
 
-            //only allow delete methods
-            if (req.Method != HttpMethod.Delete)
-            {
-                return (ActionResult)new StatusCodeResult(405);
-            }
-
             //get request body
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             dynamic data = JsonConvert.DeserializeObject(requestBody);
@@ -83,7 +77,7 @@ namespace Functions
                 collection = (string)details["COSMOS_COLLECTION"];
             }
             //display error if key vault access fails
-            catch (KeyVaultErrorException ex)
+            catch (KeyVaultErrorException)
             {
                 return new ForbidResult("Unable to access secrets in vault!");
             }
@@ -100,7 +94,7 @@ namespace Functions
                 query = dbClient.CreateDocumentQuery<Book>(collectionUri, queryString, crossPartition);
                 //log.LogInformation($"document retrieved -> {documents.Count().ToString()}");
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return (ActionResult)new StatusCodeResult(500);
             }
