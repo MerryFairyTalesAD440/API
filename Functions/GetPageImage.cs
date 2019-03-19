@@ -25,7 +25,7 @@ namespace Functions
     {
         [FunctionName("GetPageImage")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "books/{bookid}/pages/{pageid}/imageurl")] HttpRequestMessage req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "books/{bookid}/pages/{pageid}/image")] HttpRequestMessage req,
             ExecutionContext context,
             string bookid, string pageid,
             ILogger log)
