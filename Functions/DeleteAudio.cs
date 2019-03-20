@@ -90,19 +90,17 @@ namespace Functions
                 var collectionUri = UriFactory.CreateDocumentCollectionUri(database, collection);
                 var queryString = "SELECT * FROM Books b WHERE b.id=\"" + bookid + "\"";
                 var crossPartition = new FeedOptions { EnableCrossPartitionQuery = true };
-                var query = dbClient.CreateDocumentQuery<Book>(collectionUri, queryString, crossPartition);
+                var query = dbClient.CreateDocumentQuery(collectionUri, queryString, crossPartition).ToList();
                 log.LogInformation($"document retrieved -> {query.Count().ToString()}");
 
-                List<Book> books = query.ToList<Book>();
-
-                if (books.Count == 0)
+                if (query.Count == 0)
                 {
                     return (ActionResult)new NotFoundObjectResult(new { message = "Book ID not found" });
                 }
                 else
                 {
                     //set the book to the first index in the list of books
-                    Book b = books[0];
+                    Book b = query[0];
 
                     //delete language from the specific page we're interested in
                     Page p = b.Pages.ElementAt(int.Parse(bookid) - 1);
