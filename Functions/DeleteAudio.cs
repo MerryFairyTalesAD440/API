@@ -103,7 +103,7 @@ namespace Functions
                     Book b = query[0];
 
                     //delete language from the specific page we're interested in
-                    Page p = b.Pages.ElementAt(int.Parse(bookid) - 1);
+                    Page p = b.Pages.ElementAt(int.Parse(pageid) - 1);
                     foreach (Language l in p.Languages)
                     {
                         if (l.language.Equals(languagecode))
