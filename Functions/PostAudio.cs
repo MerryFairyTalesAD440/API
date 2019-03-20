@@ -67,7 +67,7 @@ namespace Functions
             String url = String.Empty;
 
             //get the audio_url from the data
-            Page page = data.Pages.ElementAt(int.Parse(bookid) - 1);
+            Page page = data.Pages.ElementAt(int.Parse(pageid) - 1);
             foreach (Language l in page.Languages)
             {
                 if (l.language.Equals(languagecode))
